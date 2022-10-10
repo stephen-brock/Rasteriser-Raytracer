@@ -74,37 +74,36 @@ CanvasTriangle sortTriangle(CanvasTriangle triangle)
 	return triangle;
 }
 
+uint32_t sampleTexture(TexturePoint point, TextureMap &map)
+{
+	return map.pixels[round(point.y) * map.width + round(point.x)];
+}
+
 //triangle[0] should be the non flat point
 //clockwise indicies after
-void fillHalfTriangle(CanvasTriangle triangle, uint32_t colour, DrawingWindow &window) 
+void fillHalfTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window) 
 {
 	float baseHeight = triangle[1].y;
 	float yDiff = triangle[0].y - baseHeight;
 	float ySteps = ceil(fabs(yDiff));
 
-	float fromDiff = triangle[0].x - triangle[2].x;
-	float toDiff = triangle[0].x - triangle[1].x;
-
-	float stepDir = yDiff > 0 ? 1 : -1;
-
 	for (int j = 0; j < ySteps; j++)
 	{
 		float t = (float)(j) / (float)(ySteps);
-		float y = baseHeight + j * stepDir;
-		float fromX = triangle[2].x + fromDiff * t;
-		float toX = triangle[1].x + toDiff * t;
-		float xSteps = ceil(fabs(toX - fromX));
-		float xDir = toX - fromX > 0 ? 1 : -1;
+		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
+		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
+		float xSteps = ceil(fabs(toPoint.x - fromPoint.x)); 
 		
 		for (int i = 0; i < xSteps; i++)
 		{
-			float x = fromX + i * xDir;
-			window.setPixelColour(x, y, colour);
+			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, (float)(i) / (float)(xSteps));
+			uint32_t col = sampleTexture(point.texturePoint, map);
+			window.setPixelColour(round(point.x), round(point.y), col);
 		}
 	}
 }
 
-void fillTriangle(CanvasTriangle triangle, Colour colour, DrawingWindow &window)
+void fillTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window)
 {
 	triangle = sortTriangle(triangle);
 	CanvasPoint center = centerPoint(triangle);
@@ -114,9 +113,8 @@ void fillTriangle(CanvasTriangle triangle, Colour colour, DrawingWindow &window)
 	CanvasTriangle triangleTop = CanvasTriangle(triangle[0], right, left);
 	CanvasTriangle triangleBottom = CanvasTriangle(triangle[2], left, right);
 	
-	uint32_t col = colourToInt(colour);
-	fillHalfTriangle(triangleTop, col, window);
-	fillHalfTriangle(triangleBottom, col, window);
+	fillHalfTriangle(triangleTop, map, window);
+	fillHalfTriangle(triangleBottom, map, window);
 }
 
 std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues)
@@ -152,11 +150,16 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 		else if (event.key.keysym.sym == SDLK_u) 
 		{
 			CanvasPoint v0 = CanvasPoint(random() % window.width, random() % window.height);
+			v0.texturePoint = TexturePoint(v0.x, v0.y);
 			CanvasPoint v1 = CanvasPoint(random() % window.width, random() % window.height);
+			v1.texturePoint = TexturePoint(v1.x, v1.y);
 			CanvasPoint v2 = CanvasPoint(random() % window.width, random() % window.height);
+			v2.texturePoint = TexturePoint(v2.x, v2.y);
 			CanvasTriangle tri = CanvasTriangle(v0, v1, v2);
 
-			fillTriangle(tri, Colour(random() % 255,random() % 255,random() % 255), window);
+			TextureMap map = TextureMap("/Users/smb/Desktop/RedNoise/src/texture.ppm");
+
+			fillTriangle(tri, map, window);
 			strokeTriangle(tri, Colour(255,255,255), window);
 		} 
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
@@ -168,6 +171,21 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
+
+	CanvasPoint v0 = CanvasPoint(160, 10);
+	v0.texturePoint = TexturePoint(195, 5);
+	CanvasPoint v1 = CanvasPoint(300, 230);
+	v1.texturePoint = TexturePoint(395, 380);
+	CanvasPoint v2 = CanvasPoint(10, 150);
+	v2.texturePoint = TexturePoint(65, 330);
+	CanvasTriangle tri = CanvasTriangle(v0, v1, v2);
+
+	TextureMap map = TextureMap("/Users/smb/Desktop/RedNoise/src/texture.ppm");
+
+	fillTriangle(tri, map, window);
+	strokeTriangle(tri, Colour(255,255,255), window);
+	
+
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
