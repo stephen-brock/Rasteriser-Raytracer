@@ -14,12 +14,12 @@
 #include <ModelTriangle.h>
 #include <unordered_map>
 
-#define WIDTH 320
-#define HEIGHT 240
+#define WIDTH 1200
+#define HEIGHT 800
 
 uint32_t colourToInt(Colour colour) 
 {
-	return 255 << 24 | colour.blue << 16 | colour.green << 8 | colour.red;
+	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
 }
 
 void drawLine(CanvasPoint from, CanvasPoint to, Colour colour, DrawingWindow &window) 
@@ -45,8 +45,9 @@ CanvasPoint lerpCanvasPoint(CanvasPoint v1, CanvasPoint v2, float t)
 {
 	float x = v2.x * t + v1.x * (1 - t);
 	float y = v2.y * t + v1.y * (1 - t);
+	float z = v2.depth * t + v1.depth * (1 - t);
 
-	CanvasPoint point = CanvasPoint(x, y);
+	CanvasPoint point = CanvasPoint(x, y, z);
 	point.texturePoint.x = v2.texturePoint.x * t + v1.texturePoint.x * (1 - t);
 	point.texturePoint.y = v2.texturePoint.y * t + v1.texturePoint.y * (1 - t);
 
@@ -86,29 +87,61 @@ uint32_t sampleTexture(TexturePoint point, TextureMap &map)
 
 //triangle[0] should be the non flat point
 //clockwise indicies after
-void fillHalfTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window) 
+void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffer, DrawingWindow &window) 
 {
 	float baseHeight = triangle[1].y;
 	float yDiff = triangle[0].y - baseHeight;
 	float ySteps = ceil(fabs(yDiff));
 
-	for (int j = 0; j < ySteps; j++)
+	uint32_t col = colourToInt(colour);
+
+	for (int j = 0; j <= ySteps; j++)
 	{
 		float t = (float)(j) / (float)(ySteps);
 		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
 		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
 		float xSteps = ceil(fabs(toPoint.x - fromPoint.x)); 
 		
-		for (int i = 0; i < xSteps; i++)
+		for (int i = 0; i <= xSteps; i++)
 		{
 			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, (float)(i) / (float)(xSteps));
-			uint32_t col = sampleTexture(point.texturePoint, map);
-			window.setPixelColour(round(point.x), round(point.y), col);
+			if (point.x >=0 && point.x < window.width && point.y >= 0 && point.y < window.height)
+			{
+				float d = depthBuffer[(int)(point.x)][(int)(point.y)];
+				float id = 1 / point.depth;
+				if (id > d)
+				{
+					window.setPixelColour(point.x, point.y, col);
+					depthBuffer[(int)(point.x)][(int)(point.y)] = id;
+				}
+			}
 		}
 	}
 }
 
-void fillTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window)
+// void fillHalfTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window) 
+// {
+// 	float baseHeight = triangle[1].y;
+// 	float yDiff = triangle[0].y - baseHeight;
+// 	float ySteps = ceil(fabs(yDiff));
+
+// 	for (int j = 0; j < ySteps; j++)
+// 	{
+// 		float t = (float)(j) / (float)(ySteps);
+// 		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
+// 		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
+// 		float xSteps = ceil(fabs(toPoint.x - fromPoint.x)); 
+		
+// 		for (int i = 0; i < xSteps; i++)
+// 		{
+// 			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, (float)(i) / (float)(xSteps));
+// 			uint32_t col = sampleTexture(point.texturePoint, map);
+// 			window.setPixelColour(round(point.x), round(point.y), col);
+// 		}
+// 	}
+// }
+
+void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, DrawingWindow &window)
 {
 	triangle = sortTriangle(triangle);
 	CanvasPoint center = centerPoint(triangle);
@@ -118,9 +151,23 @@ void fillTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &windo
 	CanvasTriangle triangleTop = CanvasTriangle(triangle[0], right, left);
 	CanvasTriangle triangleBottom = CanvasTriangle(triangle[2], left, right);
 	
-	fillHalfTriangle(triangleTop, map, window);
-	fillHalfTriangle(triangleBottom, map, window);
+	fillHalfTriangle(triangleTop, col, depthBuffer, window);
+	fillHalfTriangle(triangleBottom, col, depthBuffer, window);
 }
+
+// void fillTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window)
+// {
+// 	triangle = sortTriangle(triangle);
+// 	CanvasPoint center = centerPoint(triangle);
+// 	bool centerRight = center.x > triangle[1].x;
+// 	CanvasPoint left = centerRight ? triangle[1] : center;
+// 	CanvasPoint right = centerRight ? center : triangle[1];
+// 	CanvasTriangle triangleTop = CanvasTriangle(triangle[0], right, left);
+// 	CanvasTriangle triangleBottom = CanvasTriangle(triangle[2], left, right);
+	
+// 	fillHalfTriangle(triangleTop, map, window);
+// 	fillHalfTriangle(triangleBottom, map, window);
+// }
 
 std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues)
 {
@@ -178,40 +225,71 @@ glm::vec3 vec3FromString(std::string s, float scale)
 	float y = std::stof(stringRange(s, xTo + 1, yTo));
 	float z = std::stof(stringRange(s, yTo + 1, s.length()));
 
-	return glm::vec3(x * scale, y * scale, z * scale);
+	return glm::vec3(x, y, z) * scale;
 }
 
-ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts)
+ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts, Colour col)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	int x = std::stoi(stringRange(s, 2, xTo)) - 1;
 	int yTo = getSubStringIndex(s, ' ', xTo + 1);
 	int y = std::stoi(stringRange(s, xTo + 1, yTo)) - 1;
 	int z = std::stoi(stringRange(s, yTo + 1, s.length())) - 1;
-	return ModelTriangle(verts[x], verts[y], verts[z], Colour(255,255,255));
+
+	return ModelTriangle(verts[x], verts[y], verts[z], col);
+}
+
+std::string getMatNameFromString(std::string s)
+{
+	return stringRange(s, 6, s.length());
+}
+
+Colour getColourFromString(std::string s) 
+{
+	int xTo = getSubStringIndex(s, ' ', 3);
+	float x = std::stof(stringRange(s, 3, xTo));
+	int yTo = getSubStringIndex(s, ' ', xTo + 1);
+	float y = std::stof(stringRange(s, xTo + 1, yTo));
+	float z = std::stof(stringRange(s, yTo + 1, s.length()));
+
+	return Colour(x * 255,y * 255,z * 255);
 }
 
 std::unordered_map<std::string, Colour> loadMtl(std::string path)
 {
-	std::unordered_map<std::string, Colour> materials();
-	
+	std::unordered_map<std::string, Colour> materials;
+
 	std::string line;
 	std::ifstream file(path);
 
+	while (getline(file, line))
+	{
+		if (line[0] == 'n')
+		{
+			std::string name = getMatNameFromString(line);
+			getline(file, line);
+			Colour col = getColourFromString(line);
+			materials[name] = col;
+		}
+	}
 
 	return materials;
 }
 
-std::vector<ModelTriangle> loadObj(std::string path, float scale) 
+std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
 	std::vector<ModelTriangle> triangles;
 	std::vector<glm::vec3> verts;
+	Colour currentColour = Colour(-1,-1,-1);
 	while (getline(file, line))
 	{
 		if (line[0] == 'o') 
 		{
+			getline(file, line);
+			std::string mat = getMatNameFromString(line);
+			currentColour = materials[mat];
 			while (getline(file, line) && line.length() > 0) 
 			{
 				if (line[0] == 'v')
@@ -220,7 +298,7 @@ std::vector<ModelTriangle> loadObj(std::string path, float scale)
 				}
 				else if (line[0] == 'f')
 				{
-					triangles.push_back(triFromString(line, verts));
+					triangles.push_back(triFromString(line, verts, currentColour));
 				}
 			}
 		}
@@ -231,27 +309,22 @@ std::vector<ModelTriangle> loadObj(std::string path, float scale)
 	return triangles;
 }
 
+glm::vec3 getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength, DrawingWindow &window)
+{
+	glm::vec3 cPos = vertexPosition - cameraPosition;
+	cPos *= 230.0f;
+	float u = focalLength * cPos.x / -cPos.z + window.width / 2;
+	float v = focalLength * cPos.y / cPos.z + window.height / 2;
+
+	return glm::vec3(u, v, -cPos.z);
+}
+
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
 		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
 		else if (event.key.keysym.sym == SDLK_RIGHT) std::cout << "RIGHT" << std::endl;
 		else if (event.key.keysym.sym == SDLK_UP) std::cout << "UP" << std::endl;
 		else if (event.key.keysym.sym == SDLK_DOWN) std::cout << "DOWN" << std::endl;
-		else if (event.key.keysym.sym == SDLK_u) 
-		{
-			CanvasPoint v0 = CanvasPoint(random() % window.width, random() % window.height);
-			v0.texturePoint = TexturePoint(v0.x, v0.y);
-			CanvasPoint v1 = CanvasPoint(random() % window.width, random() % window.height);
-			v1.texturePoint = TexturePoint(v1.x, v1.y);
-			CanvasPoint v2 = CanvasPoint(random() % window.width, random() % window.height);
-			v2.texturePoint = TexturePoint(v2.x, v2.y);
-			CanvasTriangle tri = CanvasTriangle(v0, v1, v2);
-
-			TextureMap map = TextureMap("/Users/smb/Desktop/RedNoise/src/texture.ppm");
-
-			fillTriangle(tri, map, window);
-			strokeTriangle(tri, Colour(255,255,255), window);
-		} 
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 		window.savePPM("output.ppm");
 		window.saveBMP("output.bmp");
@@ -261,26 +334,45 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
-
-	CanvasPoint v0 = CanvasPoint(160, 10);
-	v0.texturePoint = TexturePoint(195, 5);
-	CanvasPoint v1 = CanvasPoint(300, 230);
-	v1.texturePoint = TexturePoint(395, 380);
-	CanvasPoint v2 = CanvasPoint(10, 150);
-	v2.texturePoint = TexturePoint(65, 330);
-	CanvasTriangle tri = CanvasTriangle(v0, v1, v2);
-
-	TextureMap map = TextureMap("/Users/smb/Desktop/RedNoise/src/texture.ppm");
-
-	fillTriangle(tri, map, window);
-	strokeTriangle(tri, Colour(255,255,255), window);
 	
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", 0.35f);
+	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/RedNoise/src/cornell-box.mtl");
+	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", materials, 0.35f);
 	
-	
-	std::cout << model[0] << std::endl;
-	
+	glm::vec3 camPos(0,0,2.0);
+	float focalPoint = 400.0;
 
+	float **depthBuffer;
+	depthBuffer = new float *[window.width];
+	for (int i = 0; i < window.width; i++)
+	{
+		depthBuffer[i] = new float[window.height];
+		for (int j = 0; j < window.height; j++)
+		{
+			depthBuffer[i][j] = 0;
+		}
+	}
+
+	for (int i = 0; i < model.size(); i++)
+	{
+		ModelTriangle tri = model[i];
+		glm::vec3 v1 = getCanvasIntersectionPoint(camPos, tri.vertices[0], focalPoint, window);
+		glm::vec3 v2 = getCanvasIntersectionPoint(camPos, tri.vertices[1], focalPoint, window);
+		glm::vec3 v3 = getCanvasIntersectionPoint(camPos, tri.vertices[2], focalPoint, window);
+		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+		CanvasTriangle triangle(p1,p2,p3);
+		fillTriangle(triangle, tri.colour, depthBuffer, window);
+	}
+	
+	for (int i = 0; i < window.width; i++)
+	{
+		delete [] depthBuffer[i];
+	}
+
+	delete [] depthBuffer;
+	
+	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
