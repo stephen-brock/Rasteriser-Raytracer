@@ -17,6 +17,8 @@
 #define WIDTH 1200
 #define HEIGHT 800
 
+glm::mat4 CameraToWorld;
+
 uint32_t colourToInt(Colour colour) 
 {
 	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
@@ -94,52 +96,31 @@ void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffe
 	float ySteps = ceil(fabs(yDiff));
 
 	uint32_t col = colourToInt(colour);
-
-	for (int j = 0; j <= ySteps; j++)
+	for (int j = fromYSteps; j <= ySteps && ySteps > 0; j++)
 	{
 		float t = (float)(j) / (float)(ySteps);
 		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
 		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
 		float xSteps = ceil(fabs(toPoint.x - fromPoint.x)); 
 		
-		for (int i = 0; i <= xSteps; i++)
+		for (int i = 0; i <= xSteps && xSteps > 0; i++)
 		{
 			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, (float)(i) / (float)(xSteps));
-			if (point.x >=0 && point.x < window.width && point.y >= 0 && point.y < window.height)
+			int x = (int)point.x;
+			int y = (int)point.y;
+			if (x >=0 && x < window.width && y >= 0 && y < window.height)
 			{
-				float d = depthBuffer[(int)(point.x)][(int)(point.y)];
+				float d = depthBuffer[x][y];
 				float id = 1 / point.depth;
 				if (id > d)
 				{
-					window.setPixelColour(point.x, point.y, col);
-					depthBuffer[(int)(point.x)][(int)(point.y)] = id;
+					window.setPixelColour(x, y, col);
+					depthBuffer[x][y] = id;
 				}
 			}
 		}
 	}
 }
-
-// void fillHalfTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window) 
-// {
-// 	float baseHeight = triangle[1].y;
-// 	float yDiff = triangle[0].y - baseHeight;
-// 	float ySteps = ceil(fabs(yDiff));
-
-// 	for (int j = 0; j < ySteps; j++)
-// 	{
-// 		float t = (float)(j) / (float)(ySteps);
-// 		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
-// 		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
-// 		float xSteps = ceil(fabs(toPoint.x - fromPoint.x)); 
-		
-// 		for (int i = 0; i < xSteps; i++)
-// 		{
-// 			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, (float)(i) / (float)(xSteps));
-// 			uint32_t col = sampleTexture(point.texturePoint, map);
-// 			window.setPixelColour(round(point.x), round(point.y), col);
-// 		}
-// 	}
-// }
 
 void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, DrawingWindow &window)
 {
@@ -154,20 +135,6 @@ void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, Draw
 	fillHalfTriangle(triangleTop, col, depthBuffer, window);
 	fillHalfTriangle(triangleBottom, col, depthBuffer, window);
 }
-
-// void fillTriangle(CanvasTriangle triangle, TextureMap &map, DrawingWindow &window)
-// {
-// 	triangle = sortTriangle(triangle);
-// 	CanvasPoint center = centerPoint(triangle);
-// 	bool centerRight = center.x > triangle[1].x;
-// 	CanvasPoint left = centerRight ? triangle[1] : center;
-// 	CanvasPoint right = centerRight ? center : triangle[1];
-// 	CanvasTriangle triangleTop = CanvasTriangle(triangle[0], right, left);
-// 	CanvasTriangle triangleBottom = CanvasTriangle(triangle[2], left, right);
-	
-// 	fillHalfTriangle(triangleTop, map, window);
-// 	fillHalfTriangle(triangleBottom, map, window);
-// }
 
 std::vector<glm::vec3> interpolateThreeElementValues(glm::vec3 from, glm::vec3 to, int numberOfValues)
 {
@@ -309,37 +276,154 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 	return triangles;
 }
 
-glm::vec3 getCanvasIntersectionPoint(glm::vec3 cameraPosition, glm::vec3 vertexPosition, float focalLength, DrawingWindow &window)
+glm::vec3 getCanvasIntersectionPoint(glm::mat4 viewMatrix, glm::vec4 vertexPosition, float focalLength, DrawingWindow &window)
 {
-	glm::vec3 cPos = vertexPosition - cameraPosition;
+	glm::vec4 cPos = vertexPosition * viewMatrix;
 	cPos *= 230.0f;
 	float u = focalLength * cPos.x / -cPos.z + window.width / 2;
-	float v = focalLength * cPos.y / cPos.z + window.height / 2;
+	float v = focalLength * cPos.y / -cPos.z + window.height / 2;
 
 	return glm::vec3(u, v, -cPos.z);
 }
 
+glm::mat4 xRotation(glm::mat4 mat, float angle)
+{
+	return glm::mat4(
+		1,0,0,0,
+		0,cos(angle),-sin(angle),0,
+		0,sin(angle),cos(angle),0,
+		0,0,0,1
+	) * mat;
+}
+
+glm::mat4 yRotation(glm::mat4 mat, float angle)
+{
+	return glm::mat4(
+		cos(angle),0,sin(angle),0,
+		0,1,0,0,
+		-sin(angle),0,cos(angle),0,
+		0,0,0,1
+	) * mat;
+}
+
+glm::mat4 zRotation(glm::mat4 mat, float angle)
+{
+	return glm::mat4(
+		cos(angle),-sin(angle),0,0,
+		sin(angle),cos(angle),0,0,
+		0,0,1,0,
+		0,0,0,1
+	) * mat;
+}
+
+glm::mat4 move(glm::mat4 mat, glm::vec3 add)
+{
+	mat[0][3] += add.x;
+	mat[1][3] += add.y;
+	mat[2][3] += add.z;
+
+	return mat;
+}
+
+glm::vec3 posFromMatrix(glm::mat4 mat)
+{
+	return glm::vec3(mat[0][3], mat[1][3], mat[2][3]);
+}
+
+glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin)
+{
+	glm::vec3 pos = posFromMatrix(mat);
+	glm::vec3 fwd = -glm::normalize(pos - origin);
+	glm::vec3 up = glm::vec3(0,1,0);
+	glm::vec3 right = glm::cross(fwd, up);
+	auto newMat = glm::mat4(
+		right.x, up.x, fwd.x, pos.x,
+		right.y, up.y, fwd.y, pos.y,
+		right.z, up.z, fwd.z, pos.z,
+		0,0,0,1
+		);
+
+	return newMat;
+}
+
+glm::mat4 matrixTRS(glm::vec3 pos, glm::vec3 eulerAngles)
+{
+	auto mat = glm::mat4(
+		1,0,0,0,
+		0,1,0,0,
+		0,0,1,0,
+		0,0,0,1
+	);
+	mat = xRotation(mat, eulerAngles.x);
+	mat = yRotation(mat, eulerAngles.y);
+	mat = zRotation(mat, eulerAngles.z);
+	return move(mat, pos);
+}
+
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
-		if (event.key.keysym.sym == SDLK_LEFT) std::cout << "LEFT" << std::endl;
-		else if (event.key.keysym.sym == SDLK_RIGHT) std::cout << "RIGHT" << std::endl;
-		else if (event.key.keysym.sym == SDLK_UP) std::cout << "UP" << std::endl;
-		else if (event.key.keysym.sym == SDLK_DOWN) std::cout << "DOWN" << std::endl;
+		if (event.key.keysym.sym == SDLK_LEFT) {
+			CameraToWorld = move(CameraToWorld, glm::vec3(0.1, 0, 0));
+		}
+		else if (event.key.keysym.sym == SDLK_RIGHT) {
+			CameraToWorld = move(CameraToWorld, glm::vec3(-0.1, 0, 0));
+		}
+		else if (event.key.keysym.sym == SDLK_UP) {
+			CameraToWorld = move(CameraToWorld, glm::vec3(0, 0, -0.1));
+		}
+		else if (event.key.keysym.sym == SDLK_DOWN) {
+			CameraToWorld = move(CameraToWorld, glm::vec3(0, 0, 0.1));
+		}
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 		window.savePPM("output.ppm");
 		window.saveBMP("output.bmp");
 	}
 }
 
+void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
+{
+	for (int i = 0; i < window.width; i++)
+	{
+		for (int j = 0; j < window.height; j++)
+		{
+			depthBuffer[i][j] = 0;
+		}
+	}
+}
+
+void draw(DrawingWindow &window, float **depthBuffer, std::vector<ModelTriangle> model)
+{
+	clearDepthBuffer(depthBuffer, window);
+	window.clearPixels();
+
+	float focalPoint = 400.0;
+
+	glm::mat4 worldToCamera = glm::inverse(CameraToWorld);
+
+	for (int i = 0; i < model.size(); i++)
+	{
+		ModelTriangle tri = model[i];
+		glm::vec3 v1 = getCanvasIntersectionPoint(worldToCamera, glm::vec4(tri.vertices[0], 1), focalPoint, window);
+		glm::vec3 v2 = getCanvasIntersectionPoint(worldToCamera, glm::vec4(tri.vertices[1], 1), focalPoint, window);
+		glm::vec3 v3 = getCanvasIntersectionPoint(worldToCamera, glm::vec4(tri.vertices[2], 1), focalPoint, window);
+		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+		CanvasTriangle triangle(p1,p2,p3);
+		fillTriangle(triangle, tri.colour, depthBuffer, window);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
+
 	
 	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/RedNoise/src/cornell-box.mtl");
 	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", materials, 0.35f);
 	
-	glm::vec3 camPos(0,0,2.0);
-	float focalPoint = 400.0;
+	float angle = 0;
+	CameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,M_PI));
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -351,18 +435,16 @@ int main(int argc, char *argv[]) {
 			depthBuffer[i][j] = 0;
 		}
 	}
+	
+	while (true) {
+		// We MUST poll for events - otherwise the window will freeze !
+		if (window.pollForInputEvents(event)) handleEvent(event, window);
+		angle += 0.05;
+		//CameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
 
-	for (int i = 0; i < model.size(); i++)
-	{
-		ModelTriangle tri = model[i];
-		glm::vec3 v1 = getCanvasIntersectionPoint(camPos, tri.vertices[0], focalPoint, window);
-		glm::vec3 v2 = getCanvasIntersectionPoint(camPos, tri.vertices[1], focalPoint, window);
-		glm::vec3 v3 = getCanvasIntersectionPoint(camPos, tri.vertices[2], focalPoint, window);
-		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
-		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
-		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
-		CanvasTriangle triangle(p1,p2,p3);
-		fillTriangle(triangle, tri.colour, depthBuffer, window);
+		draw(window, depthBuffer, model);
+		// Need to render the frame at the end, or nothing actually gets shown on the screen !
+		window.renderFrame();
 	}
 	
 	for (int i = 0; i < window.width; i++)
@@ -371,13 +453,4 @@ int main(int argc, char *argv[]) {
 	}
 
 	delete [] depthBuffer;
-	
-	
-	while (true) {
-		// We MUST poll for events - otherwise the window will freeze !
-		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		
-		// Need to render the frame at the end, or nothing actually gets shown on the screen !
-		window.renderFrame();
-	}
 }
