@@ -14,10 +14,8 @@
 #include <ModelTriangle.h>
 #include <unordered_map>
 
-#define WIDTH 1200
-#define HEIGHT 800
-
-glm::mat4 CameraToWorld;
+#define WIDTH 400
+#define HEIGHT 300
 
 uint32_t colourToInt(Colour colour) 
 {
@@ -86,37 +84,61 @@ uint32_t sampleTexture(TexturePoint point, TextureMap &map)
 {
 	return map.pixels[round(point.y) * map.width + round(point.x)];
 }
+int clampToScreen(int x, int bound)
+{
+	return x < 0 ? 0 : (x >= bound ? bound - 1 : x);
+}
 
 //triangle[0] should be the non flat point
 //clockwise indicies after
 void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffer, DrawingWindow &window) 
 {
-	float baseHeight = triangle[1].y;
-	float yDiff = triangle[0].y - baseHeight;
-	float ySteps = ceil(fabs(yDiff));
-
 	uint32_t col = colourToInt(colour);
-	for (int j = fromYSteps; j <= ySteps && ySteps > 0; j++)
+
+	int fromY = triangle[1].y;
+	int toY = triangle[0].y;
+
+	bool swappedY = toY < fromY;
+	if (swappedY)
 	{
-		float t = (float)(j) / (float)(ySteps);
-		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
-		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
-		float xSteps = ceil(fabs(toPoint.x - fromPoint.x)); 
-		
-		for (int i = 0; i <= xSteps && xSteps > 0; i++)
+		std::swap(fromY, toY);
+	}
+	
+	int ySteps = toY - fromY;
+
+	int clampedFromY = clampToScreen(fromY, window.height);
+	int clampedToY = clampToScreen(toY, window.height);
+
+	for (int j = clampedFromY; j <= clampedToY && clampedToY != clampedFromY; j++)
+	{
+		double t = (double)(j - fromY) / (double)(ySteps);
+		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], swappedY ? 1 - t : t);
+		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], swappedY ? 1 - t : t);
+		int fromX = fromPoint.x;
+		int toX = toPoint.x;
+
+		bool swappedX = toX < fromX;
+		if (swappedX)
 		{
-			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, (float)(i) / (float)(xSteps));
-			int x = (int)point.x;
-			int y = (int)point.y;
-			if (x >=0 && x < window.width && y >= 0 && y < window.height)
+			std::swap(fromX, toX);
+		}
+
+		int xSteps = toX - fromX;
+
+		int clampedFromX = clampToScreen(fromX, window.width);
+		int clampedToX = clampToScreen(toX, window.width);
+
+		for (int i = clampedFromX; i <= clampedToX && clampedToX != clampedFromX; i++)
+		{
+			double tx = (double)(i - fromX) / (double)xSteps;
+			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, swappedX ? 1 - tx : tx);
+			
+			float d = depthBuffer[i][j];
+			float id = 1 / point.depth;
+			if (point.depth > 0 && id > d)
 			{
-				float d = depthBuffer[x][y];
-				float id = 1 / point.depth;
-				if (id > d)
-				{
-					window.setPixelColour(x, y, col);
-					depthBuffer[x][y] = id;
-				}
+				window.setPixelColour(i, j, col);
+				depthBuffer[i][j] = id;
 			}
 		}
 	}
@@ -276,14 +298,20 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 	return triangles;
 }
 
+glm::vec4 posFromMatrix(glm::mat4 mat)
+{
+	return glm::vec4(mat[0][3], mat[1][3], mat[2][3], 1);
+}
+
 glm::vec3 getCanvasIntersectionPoint(glm::mat4 viewMatrix, glm::vec4 vertexPosition, float focalLength, DrawingWindow &window)
 {
 	glm::vec4 cPos = vertexPosition * viewMatrix;
 	cPos *= 230.0f;
-	float u = focalLength * cPos.x / -cPos.z + window.width / 2;
-	float v = focalLength * cPos.y / -cPos.z + window.height / 2;
+	cPos.z = -cPos.z;
+	float u = focalLength * cPos.x / fabs(cPos.z) + window.width / 2;
+	float v = window.height / 2 - focalLength * cPos.y / fabs(cPos.z);
 
-	return glm::vec3(u, v, -cPos.z);
+	return glm::vec3(u, v, cPos.z);
 }
 
 glm::mat4 xRotation(glm::mat4 mat, float angle)
@@ -325,15 +353,10 @@ glm::mat4 move(glm::mat4 mat, glm::vec3 add)
 	return mat;
 }
 
-glm::vec3 posFromMatrix(glm::mat4 mat)
-{
-	return glm::vec3(mat[0][3], mat[1][3], mat[2][3]);
-}
-
 glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin)
 {
-	glm::vec3 pos = posFromMatrix(mat);
-	glm::vec3 fwd = -glm::normalize(pos - origin);
+	glm::vec4 pos = posFromMatrix(mat);
+	glm::vec3 fwd = glm::normalize((glm::vec3)pos - origin);
 	glm::vec3 up = glm::vec3(0,1,0);
 	glm::vec3 right = glm::cross(fwd, up);
 	auto newMat = glm::mat4(
@@ -439,8 +462,9 @@ int main(int argc, char *argv[]) {
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		angle += 0.05;
-		//CameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
+		angle += 0.01;
+		CameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
+		CameraToWorld = lookAt(CameraToWorld, glm::vec3(0,0,0));
 
 		draw(window, depthBuffer, model);
 		// Need to render the frame at the end, or nothing actually gets shown on the screen !
