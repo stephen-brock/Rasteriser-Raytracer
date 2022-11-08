@@ -15,11 +15,13 @@
 #include <Camera.h>
 #include <MatrixUtils.h>
 #include <ObjLoading.h>
+#include <Light.h>
 
 #define WIDTH 400
 #define HEIGHT 300
 
 Camera camera;
+int renderMode = 0;
 
 uint32_t colourToInt(Colour colour) 
 {
@@ -164,17 +166,17 @@ void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, Draw
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
-		if (event.key.keysym.sym == SDLK_LEFT) {
-			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(0.1, 0, 0));
+		if (event.key.keysym.sym == SDLK_0) 
+		{
+			renderMode = 0;
 		}
-		else if (event.key.keysym.sym == SDLK_RIGHT) {
-			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(-0.1, 0, 0));
+		else if (event.key.keysym.sym == SDLK_1) 
+		{
+			renderMode = 1;
 		}
-		else if (event.key.keysym.sym == SDLK_UP) {
-			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(0, 0, -0.1));
-		}
-		else if (event.key.keysym.sym == SDLK_DOWN) {
-			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(0, 0, 0.1));
+		else if (event.key.keysym.sym == SDLK_2) 
+		{
+			renderMode = 2;
 		}
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 		window.savePPM("output.ppm");
@@ -190,6 +192,25 @@ void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
 		{
 			depthBuffer[i][j] = 0;
 		}
+	}
+}
+
+void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
+{
+	window.clearPixels();
+	camera.updateTransform();
+	
+	for (int i = 0; i < model.size(); i++)
+	{
+		ModelTriangle tri = model[i];
+		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0], 1));
+		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1], 1));
+		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2], 1));
+		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+		CanvasTriangle triangle(p1,p2,p3);
+		strokeTriangle(triangle, tri.colour, window);
 	}
 }
 
@@ -215,15 +236,17 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 }
 
 
-void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
+void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<Light> &lights)
 {
 	window.clearPixels();
+
+	camera.updateTransform();
 	
 	for (int i = 0; i < window.width; i++)
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTraced(i, j, model);
+			Colour col = camera.renderTraced(i, j, model, lights);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
@@ -237,6 +260,9 @@ int main(int argc, char *argv[]) {
 	
 	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/RedNoise/src/cornell-box.mtl");
 	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", materials, 0.35f);
+
+	std::vector<Light> lights = std::vector<Light>();
+	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(1,1,1)));
 	
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
@@ -255,12 +281,25 @@ int main(int argc, char *argv[]) {
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		//angle += 0.01;
-		//camera.cameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
-		//camera.cameraToWorld = lookAt(camera.cameraToWorld, glm::vec3(0,0,0));
+		angle += 0.01;
+		camera.cameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
+		camera.cameraToWorld = lookAt(camera.cameraToWorld, glm::vec3(0,0,0));
 
-		rasteriseDraw(window, depthBuffer, model);
-		// Need to render the frame at the end, or nothing actually gets shown on the screen !
+		if (renderMode == 0)
+		{
+			wireframeDraw(window, model);
+		}
+		else if (renderMode == 1)
+		{
+			rasteriseDraw(window, depthBuffer, model);
+		}
+		else if (renderMode == 2)
+		{
+			traceDraw(window, model, lights);
+		}
+
+		//Light debug
+
 		window.renderFrame();
 	}
 	
