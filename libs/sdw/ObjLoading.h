@@ -21,6 +21,6 @@ std::string getMatNameFromString(std::string s);
 
 Colour getColourFromString(std::string s);
 
-std::unordered_map<std::string, Colour> loadMtl(std::string path);
+std::unordered_map<std::string, Colour*> loadMtl(std::string path);
 
-std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale);
+std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour*> &materials, float scale);

@@ -72,9 +72,9 @@ Colour getColourFromString(std::string s)
 	return Colour(x * 255,y * 255,z * 255);
 }
 
-std::unordered_map<std::string, Colour> loadMtl(std::string path)
+std::unordered_map<std::string, Colour*> loadMtl(std::string path)
 {
-	std::unordered_map<std::string, Colour> materials;
+	std::unordered_map<std::string, Colour*> materials;
 
 	std::string line;
 	std::ifstream file(path);
@@ -86,21 +86,21 @@ std::unordered_map<std::string, Colour> loadMtl(std::string path)
 			std::string name = getMatNameFromString(line);
 			getline(file, line);
 			Colour col = getColourFromString(line);
-			materials[name] = col;
+			materials[name] = new Colour(col.red, col.green, col.blue);
 		}
 	}
 
 	return materials;
 }
 
-std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale) 
+std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour*> &materials, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
 	std::vector<std::array<int, 3> > vertexIndicies;
 	std::vector<Model*> models;
 	std::vector<ModelVertex*> verts;
-	Colour currentColour = Colour(128,128,128);
+	Colour* currentColour = nullptr;
 
 	
 	while (getline(file, line))
@@ -140,7 +140,7 @@ std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Co
 			for (int i = 0; i < vertexIndicies.size(); i++)
 			{
 				std::array<int,3> tri = vertexIndicies[i];
-				ModelTriangle newTri(*verts[tri[0]], *verts[tri[1]], *verts[tri[2]], currentColour);
+				ModelTriangle newTri(*verts[tri[0]], *verts[tri[1]], *verts[tri[2]], *currentColour);
 				currentModel->triangles.push_back(newTri);
 			}
 			

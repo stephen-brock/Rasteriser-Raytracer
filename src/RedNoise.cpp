@@ -103,9 +103,9 @@ int clampToScreen(int x, int bound)
 
 //triangle[0] should be the non flat point
 //clockwise indicies after
-void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffer, DrawingWindow &window) 
+void fillHalfTriangle(CanvasTriangle triangle, Colour* colour, float **depthBuffer, DrawingWindow &window) 
 {
-	uint32_t col = colourToInt(colour);
+	uint32_t col = colourToInt(*colour);
 
 	int fromY = triangle[1].y;
 	int toY = triangle[0].y;
@@ -156,7 +156,7 @@ void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffe
 	}
 }
 
-void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, DrawingWindow &window)
+void fillTriangle(CanvasTriangle triangle, Colour* col, float **depthBuffer, DrawingWindow &window)
 {
 	triangle = sortTriangle(triangle);
 	CanvasPoint center = centerPoint(triangle);
@@ -219,7 +219,7 @@ void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<Model*> &m
 			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
 			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
 			CanvasTriangle triangle(p1,p2,p3);
-			strokeTriangle(triangle, tri.colour, window);
+			strokeTriangle(triangle, *model->colour, window);
 		}
 	}
 }
@@ -233,7 +233,6 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, s
 
 	for (int m = 0; m < models.size(); m++)
 	{
-		
 		Model* model = models[m];
 		for (int i = 0; i < model->triangles.size(); i++)
 		{
@@ -245,7 +244,7 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, s
 			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
 			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
 			CanvasTriangle triangle(p1,p2,p3);
-			fillTriangle(triangle, tri.colour, depthBuffer, window);
+			fillTriangle(triangle, model->colour, depthBuffer, window);
 		}
 	}
 }
@@ -273,7 +272,7 @@ int main(int argc, char *argv[]) {
 	SDL_Event event;
 
 	
-	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	std::unordered_map<std::string, Colour*> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> models = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
@@ -323,7 +322,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	//Clean up
-	
+
+	for (auto& it: materials) {
+		delete it.second;
+	}
+
 	for (int i = 0; i < window.width; i++)
 	{
 		delete [] depthBuffer[i];

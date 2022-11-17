@@ -6,7 +6,7 @@ class Model
 {
     public:
         std::vector<ModelTriangle> triangles;
-        Colour colour;
+        Colour* colour;
         Model();
-        Model(std::vector<ModelTriangle> triangles, Colour colour);
+        Model(std::vector<ModelTriangle> triangles, Colour* colour);
 };
