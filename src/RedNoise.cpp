@@ -20,9 +20,6 @@
 #define WIDTH 400
 #define HEIGHT 300
 
-Camera camera;
-int renderMode = 0;
-
 uint32_t colourToInt(Colour colour) 
 {
 	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
@@ -164,7 +161,7 @@ void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, Draw
 	fillHalfTriangle(triangleBottom, col, depthBuffer, window);
 }
 
-void handleEvent(SDL_Event event, DrawingWindow &window) {
+void handleEvent(SDL_Event event, DrawingWindow &window, int &renderMode) {
 	if (event.type == SDL_KEYDOWN) {
 		if (event.key.keysym.sym == SDLK_0) 
 		{
@@ -195,7 +192,7 @@ void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
 	}
 }
 
-void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
+void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<ModelTriangle> model)
 {
 	window.clearPixels();
 	camera.updateTransform();
@@ -203,9 +200,9 @@ void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
 	for (int i = 0; i < model.size(); i++)
 	{
 		ModelTriangle tri = model[i];
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0], 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1], 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2], 1));
+		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0].position, 1));
+		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1].position, 1));
+		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2].position, 1));
 		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
 		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
 		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
@@ -214,7 +211,7 @@ void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
 	}
 }
 
-void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<ModelTriangle> model)
+void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, std::vector<ModelTriangle> model)
 {
 	clearDepthBuffer(depthBuffer, window);
 	window.clearPixels();
@@ -224,9 +221,9 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 	for (int i = 0; i < model.size(); i++)
 	{
 		ModelTriangle tri = model[i];
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0], 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1], 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2], 1));
+		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0].position, 1));
+		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1].position, 1));
+		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2].position, 1));
 		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
 		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
 		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
@@ -236,7 +233,7 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 }
 
 
-void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<Light> &lights)
+void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, Camera &camera, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
@@ -262,11 +259,11 @@ int main(int argc, char *argv[]) {
 	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(1,1,1)));
+	lights.push_back(Light(glm::vec3(0, 0.8f, .0f), glm::vec3(8,8,8)));
 	
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
-	camera = Camera(200, cameraToWorld, window.width, window.height);
+	Camera camera = Camera(200, cameraToWorld, window.width, window.height);
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
 	for (int i = 0; i < window.width; i++)
@@ -277,25 +274,31 @@ int main(int argc, char *argv[]) {
 			depthBuffer[i][j] = 0;
 		}
 	}
+
+	int renderMode = 0;
+	bool rendered = false;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
-		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		angle += 0.01;
-		camera.cameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
+		if (window.pollForInputEvents(event)) handleEvent(event, window, renderMode);
+		//angle += 0.01;
+		camera.cameraToWorld = matrixTRS(glm::vec3(sin(angle) * 2.4f,0,cos(angle) * 2.4f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, glm::vec3(0,0,0));
 
 		if (renderMode == 0)
 		{
-			wireframeDraw(window, model);
+			wireframeDraw(window, camera, model);
+			rendered = false;
 		}
 		else if (renderMode == 1)
 		{
-			rasteriseDraw(window, depthBuffer, model);
+			rasteriseDraw(window, depthBuffer, camera, model);
+			rendered = false;
 		}
-		else if (renderMode == 2)
+		else if (renderMode == 2 && !rendered)
 		{
-			traceDraw(window, model, lights);
+			traceDraw(window, model, camera, lights);
+			rendered = true;
 		}
 
 		//Light debug

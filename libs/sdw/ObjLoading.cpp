@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include "ModelTriangle.h"
 #include "ObjLoading.h"
+#include "ModelVertex.h"
 
 int getSubStringIndex(std::string s, char delimiter, int startIndex)
 {
@@ -42,15 +43,17 @@ glm::vec3 vec3FromString(std::string s, float scale)
 	return glm::vec3(x, y, z) * scale;
 }
 
-ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts, Colour col)
+std::array<int, 3> triFromString(std::string s)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	int x = std::stoi(stringRange(s, 2, xTo)) - 1;
 	int yTo = getSubStringIndex(s, ' ', xTo + 1);
 	int y = std::stoi(stringRange(s, xTo + 1, yTo)) - 1;
 	int z = std::stoi(stringRange(s, yTo + 1, s.length())) - 1;
-
-	return ModelTriangle(verts[x], verts[y], verts[z], col);
+	//ModelTriangle tri = ModelTriangle(verts[x]->position, verts[y]->position, verts[z]->position, col);
+	//glm::vec3 normal = glm::normalize(glm::cross(tri.vertices[1] - tri.vertices[0], tri.vertices[2] - tri.vertices[0]));
+	//tri.normal = normal;
+	return {x,y,z};
 }
 
 std::string getMatNameFromString(std::string s)
@@ -94,13 +97,15 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 {
 	std::string line;
 	std::ifstream file(path);
+	std::vector<std::array<int, 3> > vertexIndicies;
+	std::vector<ModelVertex*> verts;
 	std::vector<ModelTriangle> triangles;
-	std::vector<glm::vec3> verts;
-	Colour currentColour = Colour(-1,-1,-1);
+	Colour currentColour = Colour(128,128,128);
 	while (getline(file, line))
 	{
 		if (line[0] == 'o') 
 		{
+			int fromCount = verts.size();
 			getline(file, line);
 			std::string mat = getMatNameFromString(line);
 			currentColour = materials[mat];
@@ -108,16 +113,44 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 			{
 				if (line[0] == 'v')
 				{
-					verts.push_back(vec3FromString(line, scale));
+					verts.push_back(new ModelVertex(vec3FromString(line, scale)));
 				}
 				else if (line[0] == 'f')
 				{
-					triangles.push_back(triFromString(line, verts, currentColour));
+					std::array<int, 3> newTri = triFromString(line);
+					vertexIndicies.push_back(newTri);
+					ModelVertex* v0 = verts[newTri[0]];
+					ModelVertex* v1 = verts[newTri[1]];
+					ModelVertex* v2 = verts[newTri[2]];
+					glm::vec3 normal = glm::normalize(glm::cross(v1->position - v0->position, v2->position - v0->position));
+					v0->AddNormal(normal);
+					v1->AddNormal(normal);
+					v2->AddNormal(normal);
 				}
 			}
+
+			for (int i = fromCount; i < verts.size(); i++)
+			{
+				verts[i]->Normalize();
+			}
+
+			for (int i = 0; i < vertexIndicies.size(); i++)
+			{
+				std::array<int,3> tri = vertexIndicies[i];
+				ModelTriangle newTri(*verts[tri[0]], *verts[tri[1]], *verts[tri[2]], currentColour);
+				triangles.push_back(newTri);
+			}
+			
+
+			vertexIndicies.clear();
 		}
 	}
-
+	
+	for (int i = 0; i < verts.size(); i++)
+	{
+		delete verts[i];
+	}
+	
 	file.close();
 
 	return triangles;

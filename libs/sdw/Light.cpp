@@ -14,3 +14,4 @@ Light::Light(glm::vec3 position, glm::vec3 colour)
     this->colour = colour;
     this->position = position;
 }
+

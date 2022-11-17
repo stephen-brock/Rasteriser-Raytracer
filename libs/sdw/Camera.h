@@ -15,8 +15,8 @@ class Camera {
         Camera();
         Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height);
     private:
-        static RayTriangleIntersection getClosestIntersection(glm::vec3 origin, glm::vec3 dir, std::vector<ModelTriangle> &triangles);
-        static bool inShadow(RayTriangleIntersection &intersection, std::vector<ModelTriangle> &triangles, std::vector<Light> &lights);
+        static RayTriangleIntersection getClosestIntersection(glm::vec3 origin, glm::vec3 dir, std::vector<ModelTriangle> &triangles, int ignoreIndex = -1);
+        static bool inShadow(RayTriangleIntersection &intersection, std::vector<ModelTriangle> &triangles, glm::vec3 lightDir);
         glm::mat4 worldToCamera;
         int width;
         int height;
