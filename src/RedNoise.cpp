@@ -15,13 +15,22 @@
 #include <Camera.h>
 #include <MatrixUtils.h>
 #include <ObjLoading.h>
+#include <Model.h>
 #include <Light.h>
 
 #define WIDTH 400
 #define HEIGHT 300
 
+int clampColour(int x)
+{
+	return x > 255 ? 255 : (x < 0 ? 0 : x);
+}
+
 uint32_t colourToInt(Colour colour) 
 {
+	colour.red = clampColour(colour.red);
+	colour.green = clampColour(colour.green);
+	colour.blue = clampColour(colour.blue);
 	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
 }
 
@@ -192,48 +201,57 @@ void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
 	}
 }
 
-void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<ModelTriangle> model)
+void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<Model*> &models)
 {
 	window.clearPixels();
 	camera.updateTransform();
 	
-	for (int i = 0; i < model.size(); i++)
+	for (int m = 0; m < models.size(); m++)
 	{
-		ModelTriangle tri = model[i];
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0].position, 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1].position, 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2].position, 1));
-		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
-		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
-		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
-		CanvasTriangle triangle(p1,p2,p3);
-		strokeTriangle(triangle, tri.colour, window);
+		Model* model = models[m];
+		for (int i = 0; i < model->triangles.size(); i++)
+		{
+			ModelTriangle tri = model->triangles[i];
+			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0].position, 1));
+			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1].position, 1));
+			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2].position, 1));
+			auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+			CanvasTriangle triangle(p1,p2,p3);
+			strokeTriangle(triangle, tri.colour, window);
+		}
 	}
 }
 
-void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, std::vector<ModelTriangle> model)
+void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, std::vector<Model*> &models)
 {
 	clearDepthBuffer(depthBuffer, window);
 	window.clearPixels();
 
 	camera.updateTransform();
 
-	for (int i = 0; i < model.size(); i++)
+	for (int m = 0; m < models.size(); m++)
 	{
-		ModelTriangle tri = model[i];
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0].position, 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1].position, 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2].position, 1));
-		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
-		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
-		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
-		CanvasTriangle triangle(p1,p2,p3);
-		fillTriangle(triangle, tri.colour, depthBuffer, window);
+		
+		Model* model = models[m];
+		for (int i = 0; i < model->triangles.size(); i++)
+		{
+			ModelTriangle tri = model->triangles[i];
+			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0].position, 1));
+			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1].position, 1));
+			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2].position, 1));
+			auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+			CanvasTriangle triangle(p1,p2,p3);
+			fillTriangle(triangle, tri.colour, depthBuffer, window);
+		}
 	}
 }
 
 
-void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, Camera &camera, std::vector<Light> &lights)
+void traceDraw(DrawingWindow &window, std::vector<Model*> &models, Camera &camera, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
@@ -243,7 +261,7 @@ void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, Camera 
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTraced(i, j, model, lights);
+			Colour col = camera.renderTraced(i, j, models, lights);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
@@ -256,7 +274,7 @@ int main(int argc, char *argv[]) {
 
 	
 	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
+	std::vector<Model*> models = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, .0f), glm::vec3(8,8,8)));
@@ -287,28 +305,33 @@ int main(int argc, char *argv[]) {
 
 		if (renderMode == 0)
 		{
-			wireframeDraw(window, camera, model);
+			wireframeDraw(window, camera, models);
 			rendered = false;
 		}
 		else if (renderMode == 1)
 		{
-			rasteriseDraw(window, depthBuffer, camera, model);
+			rasteriseDraw(window, depthBuffer, camera, models);
 			rendered = false;
 		}
 		else if (renderMode == 2 && !rendered)
 		{
-			traceDraw(window, model, camera, lights);
+			traceDraw(window, models, camera, lights);
 			rendered = true;
 		}
 
-		//Light debug
-
 		window.renderFrame();
 	}
+
+	//Clean up
 	
 	for (int i = 0; i < window.width; i++)
 	{
 		delete [] depthBuffer[i];
+	}
+	
+	for (int i = 0; i < models.size(); i++)
+	{
+		delete models[i];
 	}
 
 	delete [] depthBuffer;

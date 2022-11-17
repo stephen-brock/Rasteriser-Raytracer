@@ -93,14 +93,16 @@ std::unordered_map<std::string, Colour> loadMtl(std::string path)
 	return materials;
 }
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale) 
+std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
 	std::vector<std::array<int, 3> > vertexIndicies;
+	std::vector<Model*> models;
 	std::vector<ModelVertex*> verts;
-	std::vector<ModelTriangle> triangles;
 	Colour currentColour = Colour(128,128,128);
+
+	
 	while (getline(file, line))
 	{
 		if (line[0] == 'o') 
@@ -109,6 +111,7 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 			getline(file, line);
 			std::string mat = getMatNameFromString(line);
 			currentColour = materials[mat];
+			Model* currentModel = new Model(std::vector<ModelTriangle>(), currentColour);
 			while (getline(file, line) && line.length() > 0) 
 			{
 				if (line[0] == 'v')
@@ -138,10 +141,10 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 			{
 				std::array<int,3> tri = vertexIndicies[i];
 				ModelTriangle newTri(*verts[tri[0]], *verts[tri[1]], *verts[tri[2]], currentColour);
-				triangles.push_back(newTri);
+				currentModel->triangles.push_back(newTri);
 			}
 			
-
+			models.push_back(currentModel);
 			vertexIndicies.clear();
 		}
 	}
@@ -153,5 +156,5 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 	
 	file.close();
 
-	return triangles;
+	return models;
 }

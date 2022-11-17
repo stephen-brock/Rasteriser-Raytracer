@@ -7,6 +7,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "ModelTriangle.h"
+#include "Model.h"
 
 int getSubStringIndex(std::string s, char delimiter, int startIndex);
 
@@ -22,4 +23,4 @@ Colour getColourFromString(std::string s);
 
 std::unordered_map<std::string, Colour> loadMtl(std::string path);
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale);
+std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale);
