@@ -255,8 +255,8 @@ int main(int argc, char *argv[]) {
 	SDL_Event event;
 
 	
-	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/RedNoise/src/cornell-box.mtl");
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", materials, 0.35f);
+	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, .0f), glm::vec3(8,8,8)));
