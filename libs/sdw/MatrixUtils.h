@@ -17,6 +17,6 @@ glm::mat4 matrixTRS(glm::vec3 pos, glm::vec3 eulerAngles);
 
 glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin);
 
-Colour vectorToColour(glm::vec3 &col);
+Colour vectorToColour(glm::vec3 col);
 
-glm::vec3 colourToVector(Colour &col);
+glm::vec3 colourToVector(Colour col);

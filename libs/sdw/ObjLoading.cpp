@@ -79,10 +79,8 @@ Colour getColourFromString(std::string s)
 	return Colour(x * 255,y * 255,z * 255);
 }
 
-std::unordered_map<std::string, Colour> loadMtl(std::string path)
+void loadMtl(std::unordered_map<std::string, Colour> &materials, std::string path)
 {
-	std::unordered_map<std::string, Colour> materials;
-
 	std::string line;
 	std::ifstream file(path);
 
@@ -96,15 +94,12 @@ std::unordered_map<std::string, Colour> loadMtl(std::string path)
 			materials[name] = col;
 		}
 	}
-
-	return materials;
 }
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<ModelVertex> &verts, float scale) 
+void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<ModelVertex> &verts, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
-	std::vector<ModelTriangle> triangles = std::vector<ModelTriangle>();
 	Colour currentColour = Colour(-1,-1,-1);
 	while (getline(file, line))
 	{
@@ -134,7 +129,4 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 	{
 		verts[i].normal = glm::normalize(verts[i].normal);
 	}
-	
-
-	return triangles;
 }

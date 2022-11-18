@@ -20,6 +20,8 @@
 #define WIDTH 400
 #define HEIGHT 300
 
+const bool GouraudShading = true;
+
 Camera camera;
 int renderMode = 0;
 
@@ -259,14 +261,39 @@ void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::ve
 	}
 }
 
+
+
+void traceDrawGouraud(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
+{
+	window.clearPixels();
+
+	camera.updateTransform();
+
+	std::vector<glm::vec3> vertexColours = std::vector<glm::vec3>();
+	camera.initialiseGouraud(model, verts, lights, vertexColours);
+	
+	for (int i = 0; i < window.width; i++)
+	{
+		for (int j = 0; j < window.height; j++)
+		{
+			Colour col = camera.renderTracedGouraud(i, j, model, verts, lights, vertexColours);
+			uint32_t intCol = colourToInt(col);
+			window.setPixelColour(i, j, intCol);
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
 
 	
-	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	std::unordered_map<std::string, Colour> materials = std::unordered_map<std::string, Colour>();
+
+	loadMtl(materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<ModelVertex> verts = std::vector<ModelVertex>();
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, verts, 0.35f);
+	std::vector<ModelTriangle> model = std::vector<ModelTriangle>();
+	loadObj(model, "/Users/smb/Desktop/Graphics-Coursework/src/sphere.obj", materials, verts, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
@@ -284,13 +311,6 @@ int main(int argc, char *argv[]) {
 			depthBuffer[i][j] = 0;
 		}
 	}
-
-	std::vector<glm::vec3> vertexColours = std::vector<glm::vec3>();
-	for (int i = 0; i < verts.size(); i++)
-	{
-		vertexColours.push_back(glm::vec3(0,0,0));
-	}
-	
 
 	bool rendered = false;
 	
@@ -313,7 +333,14 @@ int main(int argc, char *argv[]) {
 		}
 		else if (renderMode == 2 && !rendered)
 		{
-			traceDraw(window, model, verts, lights);
+			if (GouraudShading)
+			{
+				traceDrawGouraud(window, model, verts, lights);
+			}
+			else 
+			{
+				traceDraw(window, model, verts, lights);
+			}
 			rendered = true;
 		}
 
