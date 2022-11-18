@@ -11,6 +11,7 @@ struct ModelTriangle {
 	Colour colour{};
 
 	ModelTriangle();
+	ModelTriangle(ModelTriangle &mt);
 	ModelTriangle(const int &v0, const int &v1, const int &v2, Colour trigColour);
 	friend std::ostream &operator<<(std::ostream &os, const ModelTriangle &triangle);
 };
