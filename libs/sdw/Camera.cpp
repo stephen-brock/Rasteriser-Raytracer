@@ -93,7 +93,6 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	float v = intersection.v;
 	float w = 1 - u - v;
 
-
 	ModelTriangle tri = triangles[intersection.triangleIndex];
 
 	ModelVertex v0 = verts[tri.vertices[0]];

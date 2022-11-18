@@ -6,6 +6,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "ModelTriangle.h"
+#include "MatrixUtils.h"
 #include "ObjLoading.h"
 
 int getSubStringIndex(std::string s, char delimiter, int startIndex)
@@ -31,7 +32,7 @@ std::string stringRange(std::string s, int from, int to)
 	return sub;
 }
 
-ModelVertex vertFromString(std::string s, float scale)
+glm::vec3 vertFromString(std::string s, float scale)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	float x = std::stof(stringRange(s, 2, xTo));
@@ -39,8 +40,7 @@ ModelVertex vertFromString(std::string s, float scale)
 	float y = std::stof(stringRange(s, xTo + 1, yTo));
 	float z = std::stof(stringRange(s, yTo + 1, s.length()));
 
-	ModelVertex vert = ModelVertex(glm::vec3(x, y, z) * scale);
-	return vert;
+	return glm::vec3(x, y, z) * scale;
 }
 
 ModelTriangle triFromString(std::string s, std::vector<ModelVertex> &verts, Colour col)
@@ -79,7 +79,7 @@ Colour getColourFromString(std::string s)
 	return Colour(x * 255,y * 255,z * 255);
 }
 
-void loadMtl(std::unordered_map<std::string, Colour> &materials, std::string path)
+void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string path)
 {
 	std::string line;
 	std::ifstream file(path);
@@ -90,17 +90,16 @@ void loadMtl(std::unordered_map<std::string, Colour> &materials, std::string pat
 		{
 			std::string name = getMatNameFromString(line);
 			getline(file, line);
-			Colour col = getColourFromString(line);
-			materials[name] = col;
+			materials[name] = new Material(colourToVector(getColourFromString(line)));
 		}
 	}
 }
 
-void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<ModelVertex> &verts, float scale) 
+void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unordered_map<std::string, Material*> &materials, std::vector<ModelVertex> &verts, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
-	Colour currentColour = Colour(-1,-1,-1);
+	Material* currentColour = nullptr;
 	while (getline(file, line))
 	{
 		if (line[0] == 'o') 
@@ -112,11 +111,11 @@ void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unord
 			{
 				if (line[0] == 'v')
 				{
-					verts.push_back(vertFromString(line, scale));
+					verts.emplace_back(vertFromString(line, scale));
 				}
 				else if (line[0] == 'f')
 				{
-					triangles.push_back(triFromString(line, verts, currentColour));
+					triangles.push_back(triFromString(line, verts, vectorToColour(currentColour->sampleAlbedo(0,0))));
 				}
 			}
 		}

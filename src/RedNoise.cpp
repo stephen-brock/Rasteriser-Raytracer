@@ -288,7 +288,7 @@ int main(int argc, char *argv[]) {
 	SDL_Event event;
 
 	
-	std::unordered_map<std::string, Colour> materials = std::unordered_map<std::string, Colour>();
+	std::unordered_map<std::string, Material*> materials = std::unordered_map<std::string, Material*>();
 
 	loadMtl(materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<ModelVertex> verts = std::vector<ModelVertex>();
@@ -347,6 +347,11 @@ int main(int argc, char *argv[]) {
 		//Light debug
 
 		window.renderFrame();
+	}
+
+	for (auto& item: materials)
+	{
+		delete item.second;
 	}
 	
 	for (int i = 0; i < window.width; i++)
