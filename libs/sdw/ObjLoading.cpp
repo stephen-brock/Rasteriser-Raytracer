@@ -97,12 +97,12 @@ std::unordered_map<std::string, Colour> loadMtl(std::string path)
 	return materials;
 }
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale) 
+std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<glm::vec3> &normals, std::vector<glm::vec3> &brightness, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
-	std::vector<ModelTriangle> triangles;
-	std::vector<glm::vec3> verts;
+	std::vector<ModelTriangle> triangles = std::vector<ModelTriangle>();
+	std::vector<glm::vec3> verts = std::vector<glm::vec3>();
 	Colour currentColour = Colour(-1,-1,-1);
 	while (getline(file, line))
 	{
@@ -116,6 +116,8 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 				if (line[0] == 'v')
 				{
 					verts.push_back(vec3FromString(line, scale));
+					normals.push_back(glm::vec3(0,0,0));
+					brightness.push_back(glm::vec3(0,0,0));
 				}
 				else if (line[0] == 'f')
 				{

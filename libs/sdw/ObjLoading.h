@@ -22,4 +22,4 @@ Colour getColourFromString(std::string s);
 
 std::unordered_map<std::string, Colour> loadMtl(std::string path);
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale);
+std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<glm::vec3> &normals, std::vector<glm::vec3> &brightness, float scale);

@@ -259,7 +259,9 @@ int main(int argc, char *argv[]) {
 
 	
 	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
+	std::vector<glm::vec3> brightness = std::vector<glm::vec3>();
+	std::vector<glm::vec3> normals = std::vector<glm::vec3>();
+	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, normals, brightness, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
