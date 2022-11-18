@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
 	loadObj(model, "/Users/smb/Desktop/Graphics-Coursework/src/sphere.obj", materials, verts, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
+	lights.push_back(Light(glm::vec3(0, 0.8f, 2), glm::vec3(10,10,10)));
 	
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
