@@ -118,6 +118,8 @@ void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unord
 					triangles.push_back(triFromString(line, verts, vectorToColour(currentColour->sampleAlbedo(0,0))));
 				}
 			}
+
+			std::cout << verts.size() << std::endl;
 		}
 	}
 

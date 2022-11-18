@@ -23,7 +23,7 @@
 const bool GouraudShading = false;
 
 Camera camera;
-int renderMode = 0;
+int renderMode = 1;
 
 uint32_t colourToInt(Colour colour) 
 {
@@ -287,14 +287,14 @@ int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
 
-	
-	std::unordered_map<std::string, Material*> materials = std::unordered_map<std::string, Material*>();
+	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
-	loadMtl(materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
-	std::vector<ModelVertex> verts = std::vector<ModelVertex>();
-	std::vector<ModelTriangle> model = std::vector<ModelTriangle>();
-	loadObj(model, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, verts, 0.35f);
+	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	std::vector<ModelVertex> *verts = new std::vector<ModelVertex>();
+	std::vector<ModelTriangle> *model = new std::vector<ModelTriangle>();
+	loadObj(*model, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, *verts, 0.35f);
 
+	std::cout << (*verts).size() << std::endl;
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
 	
@@ -323,23 +323,23 @@ int main(int argc, char *argv[]) {
 
 		if (renderMode == 0)
 		{
-			wireframeDraw(window, model, verts);
+			wireframeDraw(window, *model, *verts);
 			rendered = false;
 		}
 		else if (renderMode == 1)
 		{
-			rasteriseDraw(window, depthBuffer, model, verts);
+			rasteriseDraw(window, depthBuffer, *model, *verts);
 			rendered = false;
 		}
 		else if (renderMode == 2 && !rendered)
 		{
 			if (GouraudShading)
 			{
-				traceDrawGouraud(window, model, verts, lights);
+				traceDrawGouraud(window, *model, *verts, lights);
 			}
 			else 
 			{
-				traceDraw(window, model, verts, lights);
+				traceDraw(window, *model, *verts, lights);
 			}
 			rendered = true;
 		}
@@ -349,10 +349,14 @@ int main(int argc, char *argv[]) {
 		window.renderFrame();
 	}
 
-	for (auto& item: materials)
+	for (auto& item: *materials)
 	{
 		delete item.second;
 	}
+
+	delete materials;
+	delete verts;
+	delete model;
 	
 	for (int i = 0; i < window.width; i++)
 	{
