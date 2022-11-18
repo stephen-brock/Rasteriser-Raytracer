@@ -112,8 +112,7 @@ void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unord
 			{
 				if (line[0] == 'v')
 				{
-					ModelVertex newVertex = vertFromString(line, scale);
-					verts.push_back(newVertex);
+					verts.push_back(vertFromString(line, scale));
 				}
 				else if (line[0] == 'f')
 				{

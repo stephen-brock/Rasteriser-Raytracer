@@ -105,7 +105,6 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	glm::vec3 lightIntensity = glm::vec3(0,0,0);
 	glm::vec3 specularIntensity = glm::vec3(0,0,0);
 	glm::vec3 ambientIntensity = glm::vec3(0.2f,0.3f,0.35f);
-	
 
 	for (int i = 0; i < lights.size(); i++)
 	{
