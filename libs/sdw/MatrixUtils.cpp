@@ -75,3 +75,18 @@ glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin)
 
 	return newMat;
 }
+
+
+Colour vectorToColour(glm::vec3 &col)
+{
+	return Colour(
+		col.x > 1 ? 255 : (col.x < 0 ? 0 : col.x * 255),
+		col.y > 1 ? 255 : (col.y < 0 ? 0 : col.y * 255),
+		col.z > 1 ? 255 : (col.z < 0 ? 0 : col.z * 255)
+	);
+}
+
+glm::vec3 colourToVector(Colour &col)
+{
+	return glm::vec3(col.red / 255.0, col.green / 255.0, col.blue / 255.0);
+}

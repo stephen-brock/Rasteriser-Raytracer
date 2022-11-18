@@ -50,7 +50,14 @@ ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts, Colour
 	int y = std::stoi(stringRange(s, xTo + 1, yTo)) - 1;
 	int z = std::stoi(stringRange(s, yTo + 1, s.length())) - 1;
 
-	return ModelTriangle(verts[x], verts[y], verts[z], col);
+	glm::vec3 v0 = verts[x];
+	glm::vec3 v1 = verts[y];
+	glm::vec3 v2 = verts[z];
+
+	glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+	ModelTriangle tri =ModelTriangle(verts[x], verts[y], verts[z], col);
+	tri.normal = normal;
+	return tri;
 }
 
 std::string getMatNameFromString(std::string s)

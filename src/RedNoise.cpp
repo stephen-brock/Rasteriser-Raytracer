@@ -258,11 +258,11 @@ int main(int argc, char *argv[]) {
 	SDL_Event event;
 
 	
-	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/RedNoise/src/cornell-box.mtl");
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/RedNoise/src/cornell-box.obj", materials, 0.35f);
+	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(1,1,1)));
+	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
 	
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
@@ -277,25 +277,30 @@ int main(int argc, char *argv[]) {
 			depthBuffer[i][j] = 0;
 		}
 	}
+
+	bool rendered = false;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		angle += 0.01;
+		//angle += 0.01;
 		camera.cameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, glm::vec3(0,0,0));
 
 		if (renderMode == 0)
 		{
 			wireframeDraw(window, model);
+			rendered = false;
 		}
 		else if (renderMode == 1)
 		{
 			rasteriseDraw(window, depthBuffer, model);
+			rendered = false;
 		}
-		else if (renderMode == 2)
+		else if (renderMode == 2 && !rendered)
 		{
 			traceDraw(window, model, lights);
+			rendered = true;
 		}
 
 		//Light debug
