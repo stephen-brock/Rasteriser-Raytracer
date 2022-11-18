@@ -201,14 +201,14 @@ void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
 	}
 }
 
-void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<Model*> &models)
+void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<Model> &models)
 {
 	window.clearPixels();
 	camera.updateTransform();
 	
 	for (int m = 0; m < models.size(); m++)
 	{
-		Model* model = models[m];
+		Model* model = &models[m];
 		for (int i = 0; i < model->triangles.size(); i++)
 		{
 			ModelTriangle tri = model->triangles[i];
@@ -224,7 +224,7 @@ void wireframeDraw(DrawingWindow &window, Camera &camera, std::vector<Model*> &m
 	}
 }
 
-void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, std::vector<Model*> &models)
+void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, std::vector<Model> &models)
 {
 	clearDepthBuffer(depthBuffer, window);
 	window.clearPixels();
@@ -233,7 +233,7 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, s
 
 	for (int m = 0; m < models.size(); m++)
 	{
-		Model* model = models[m];
+		Model* model = &models[m];
 		for (int i = 0; i < model->triangles.size(); i++)
 		{
 			ModelTriangle tri = model->triangles[i];
@@ -250,7 +250,7 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, Camera &camera, s
 }
 
 
-void traceDraw(DrawingWindow &window, std::vector<Model*> &models, Camera &camera, std::vector<Light> &lights)
+void traceDraw(DrawingWindow &window, std::vector<Model> &models, Camera &camera, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
@@ -271,8 +271,8 @@ int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
 	
-	std::unordered_map<std::string, Colour*> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
-	std::vector<Model*> models = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
+	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	std::vector<Model> models = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, .0f), glm::vec3(8,8,8)));
@@ -321,19 +321,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	//Clean up
-
-	for (auto& it: materials) {
-		delete it.second;
-	}
-
 	for (int i = 0; i < window.width; i++)
 	{
 		delete [] depthBuffer[i];
-	}
-	
-	for (int i = 0; i < models.size(); i++)
-	{
-		delete models[i];
 	}
 
 	delete [] depthBuffer;

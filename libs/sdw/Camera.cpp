@@ -41,13 +41,13 @@ glm::vec3 Camera::getRayDirection(float u, float v)
 	return glm::normalize(glm::vec3(dir));
 }
 
-RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 origin, glm::vec3 rayDirection, std::vector<Model*> &models, int ignoreIndex)
+RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 origin, glm::vec3 rayDirection, std::vector<Model> &models, int ignoreIndex)
 {
 	RayTriangleIntersection closestIntersection = RayTriangleIntersection(glm::vec3(0,0,0), 1000, nullptr, -1);
 
 	for (int m = 0; m < models.size(); m++)
 	{
-		Model* model = models[m];
+		Model* model = &models[m];
 		for (int i = 0; i < model->triangles.size(); i++)
 		{
 			if (i == ignoreIndex)
@@ -76,7 +76,7 @@ RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 origin, glm::ve
 	return closestIntersection;
 }
 
-bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<Model*> &models, glm::vec3 lightDir)
+bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<Model> &models, glm::vec3 lightDir)
 {
 	RayTriangleIntersection shadowIntersection = Camera::getClosestIntersection(intersection.intersectionPoint, lightDir, models, intersection.triangleIndex);
 	if (shadowIntersection.triangleIndex != -1 && shadowIntersection.distanceFromCamera < 1)
@@ -86,7 +86,7 @@ bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<Model*>
 	return false;
 }
 
-Colour Camera::renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights)
+Colour Camera::renderTraced(int x, int y, std::vector<Model> &models, std::vector<Light> &lights)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec4 cameraPos = posFromMatrix(this->cameraToWorld);

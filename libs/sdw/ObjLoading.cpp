@@ -72,9 +72,9 @@ Colour getColourFromString(std::string s)
 	return Colour(x * 255,y * 255,z * 255);
 }
 
-std::unordered_map<std::string, Colour*> loadMtl(std::string path)
+std::unordered_map<std::string, Colour> loadMtl(std::string path)
 {
-	std::unordered_map<std::string, Colour*> materials;
+	std::unordered_map<std::string, Colour> materials;
 
 	std::string line;
 	std::ifstream file(path);
@@ -86,20 +86,20 @@ std::unordered_map<std::string, Colour*> loadMtl(std::string path)
 			std::string name = getMatNameFromString(line);
 			getline(file, line);
 			Colour col = getColourFromString(line);
-			materials[name] = new Colour(col.red, col.green, col.blue);
+			materials[name] = Colour(col.red, col.green, col.blue);
 		}
 	}
 
 	return materials;
 }
 
-std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Colour*> &materials, float scale) 
+std::vector<Model> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
 	std::vector<std::array<int, 3> > vertexIndicies;
-	std::vector<Model*> models;
-	std::vector<ModelVertex*> verts;
+	std::vector<Model> models;
+	std::vector<ModelVertex> verts;
 	Colour* currentColour = nullptr;
 
 	
@@ -110,21 +110,20 @@ std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Co
 			int fromCount = verts.size();
 			getline(file, line);
 			std::string mat = getMatNameFromString(line);
-			currentColour = materials[mat];
-			Model* currentModel = new Model(std::vector<ModelTriangle>(), currentColour);
+			currentColour = &materials[mat];
 			while (getline(file, line) && line.length() > 0) 
 			{
 				if (line[0] == 'v')
 				{
-					verts.push_back(new ModelVertex(vec3FromString(line, scale)));
+					verts.push_back(ModelVertex(vec3FromString(line, scale)));
 				}
 				else if (line[0] == 'f')
 				{
 					std::array<int, 3> newTri = triFromString(line);
 					vertexIndicies.push_back(newTri);
-					ModelVertex* v0 = verts[newTri[0]];
-					ModelVertex* v1 = verts[newTri[1]];
-					ModelVertex* v2 = verts[newTri[2]];
+					ModelVertex* v0 = &verts[newTri[0]];
+					ModelVertex* v1 = &verts[newTri[1]];
+					ModelVertex* v2 = &verts[newTri[2]];
 					glm::vec3 normal = glm::normalize(glm::cross(v1->position - v0->position, v2->position - v0->position));
 					v0->AddNormal(normal);
 					v1->AddNormal(normal);
@@ -132,26 +131,22 @@ std::vector<Model*> loadObj(std::string path, std::unordered_map<std::string, Co
 				}
 			}
 
+			Model currentModel = Model(std::vector<ModelTriangle>(), currentColour);
 			for (int i = fromCount; i < verts.size(); i++)
 			{
-				verts[i]->Normalize();
+				verts[i].Normalize();
 			}
 
 			for (int i = 0; i < vertexIndicies.size(); i++)
 			{
 				std::array<int,3> tri = vertexIndicies[i];
-				ModelTriangle newTri(*verts[tri[0]], *verts[tri[1]], *verts[tri[2]], *currentColour);
-				currentModel->triangles.push_back(newTri);
+				ModelTriangle newTri(verts[tri[0]], verts[tri[1]], verts[tri[2]], *currentColour);
+				currentModel.triangles.push_back(newTri);
 			}
 			
 			models.push_back(currentModel);
 			vertexIndicies.clear();
 		}
-	}
-	
-	for (int i = 0; i < verts.size(); i++)
-	{
-		delete verts[i];
 	}
 	
 	file.close();

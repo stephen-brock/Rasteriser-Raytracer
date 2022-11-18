@@ -5,7 +5,7 @@ ModelVertex::ModelVertex() = default;
 ModelVertex::ModelVertex(glm::vec3 position)
 {
     this->position = position;
-    this->normal = normal;
+    this->normal = glm::vec3(0,0,0);
 }
 void ModelVertex::AddNormal(glm::vec3 normal)
 {
