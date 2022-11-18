@@ -270,7 +270,6 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, Camera &camer
 int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
-
 	
 	std::unordered_map<std::string, Colour*> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> models = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, 0.35f);
