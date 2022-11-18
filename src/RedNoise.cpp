@@ -20,7 +20,7 @@
 #define WIDTH 400
 #define HEIGHT 300
 
-const bool GouraudShading = true;
+const bool GouraudShading = false;
 
 Camera camera;
 int renderMode = 0;
