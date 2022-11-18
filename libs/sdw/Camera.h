@@ -20,6 +20,7 @@ class Camera {
     private:
         static RayTriangleIntersection getClosestIntersection(glm::vec3 &origin, glm::vec3 &dir, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts);
         static bool inShadow(RayTriangleIntersection &intersection, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, glm::vec3 &lightDir);
+        glm::vec3 render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights);
         glm::vec3 renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights);
         glm::mat4 worldToCamera;
         int width;

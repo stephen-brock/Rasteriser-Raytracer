@@ -80,31 +80,11 @@ bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<ModelTr
 	return false;
 }
 
-glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
+glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
 {
-	RayTriangleIntersection intersection = Camera::getClosestIntersection(origin, rayDir, triangles, verts);
-
-	if (intersection.triangleIndex == -1)
-	{
-		return glm::vec3(0,0,0);
-	}
-
-	float u = intersection.u;
-	float v = intersection.v;
-	float w = 1 - u - v;
-
-	ModelTriangle tri = triangles[intersection.triangleIndex];
-
-	ModelVertex v0 = verts[tri.vertices[0]];
-	ModelVertex v1 = verts[tri.vertices[1]];
-	ModelVertex v2 = verts[tri.vertices[2]];
-	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
-
-	glm::vec3 albedo = colourToVector(tri.colour);
 	glm::vec3 lightIntensity = glm::vec3(0,0,0);
 	glm::vec3 specularIntensity = glm::vec3(0,0,0);
 	glm::vec3 ambientIntensity = glm::vec3(0.2f,0.3f,0.35f);
-
 	for (int i = 0; i < lights.size(); i++)
 	{
 		glm::vec3 lightDir = lights[i].position - intersection.intersectionPoint; 
@@ -129,13 +109,50 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	return finalColour;
 }
 
+glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
+{
+	RayTriangleIntersection intersection = Camera::getClosestIntersection(origin, rayDir, triangles, verts);
+
+	if (intersection.triangleIndex == -1)
+	{
+		return glm::vec3(0,0,0);
+	}
+
+	float u = intersection.u;
+	float v = intersection.v;
+	float w = 1 - u - v;
+
+	ModelTriangle tri = triangles[intersection.triangleIndex];
+
+	ModelVertex v0 = verts[tri.vertices[0]];
+	ModelVertex v1 = verts[tri.vertices[1]];
+	ModelVertex v2 = verts[tri.vertices[2]];
+	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
+
+	glm::vec3 albedo = colourToVector(tri.colour);
+	return render(albedo, normal, intersection, rayDir, triangles, verts, lights);
+}
+
 void Camera::initialiseGouraud(std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights, std::vector<glm::vec3> &vertexColours)
 {
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
+
 	for (int i = 0; i < verts.size(); i++)
 	{
-		glm::vec3 rayDir = glm::normalize(verts[i].pos - cameraPos);
-		vertexColours.push_back(renderRay(cameraPos, rayDir, triangles, verts, lights));
+		vertexColours.push_back(glm::vec3(0,0,0));
+	}
+	
+
+	for (int i = 0; i < triangles.size(); i++)
+	{
+		glm::vec3 albedo = colourToVector(triangles[i].colour);
+		for (int j = 0; j < 3; j++)
+		{
+			ModelVertex vert = verts[triangles[i].vertices[j]];
+			glm::vec3 rayDir = glm::normalize(vert.pos - cameraPos);
+			RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, triangles[i].vertices[j]);
+			vertexColours[triangles[i].vertices[j]] = render(albedo, vert.normal, intersection, rayDir, triangles, verts, lights);
+		}
 	}
 }
 
