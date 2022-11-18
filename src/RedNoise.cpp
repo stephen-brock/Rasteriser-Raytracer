@@ -195,7 +195,7 @@ void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
 	}
 }
 
-void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
+void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts)
 {
 	window.clearPixels();
 	camera.updateTransform();
@@ -203,9 +203,12 @@ void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
 	for (int i = 0; i < model.size(); i++)
 	{
 		ModelTriangle tri = model[i];
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0], 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1], 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2], 1));
+		glm::vec3 mv1 = verts[tri.vertices[0]].pos;
+		glm::vec3 mv2 = verts[tri.vertices[1]].pos;
+		glm::vec3 mv3 = verts[tri.vertices[2]].pos;
+		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
+		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
+		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
 		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
 		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
 		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
@@ -214,7 +217,7 @@ void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> model)
 	}
 }
 
-void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<ModelTriangle> model)
+void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts)
 {
 	clearDepthBuffer(depthBuffer, window);
 	window.clearPixels();
@@ -224,9 +227,12 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 	for (int i = 0; i < model.size(); i++)
 	{
 		ModelTriangle tri = model[i];
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[0], 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[1], 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(tri.vertices[2], 1));
+		glm::vec3 mv1 = verts[tri.vertices[0]].pos;
+		glm::vec3 mv2 = verts[tri.vertices[1]].pos;
+		glm::vec3 mv3 = verts[tri.vertices[2]].pos;
+		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
+		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
+		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
 		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
 		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
 		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
@@ -236,7 +242,7 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 }
 
 
-void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<Light> &lights)
+void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
@@ -246,7 +252,7 @@ void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::ve
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTraced(i, j, model, lights);
+			Colour col = camera.renderTraced(i, j, model, verts, lights);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
@@ -259,9 +265,8 @@ int main(int argc, char *argv[]) {
 
 	
 	std::unordered_map<std::string, Colour> materials = loadMtl("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
-	std::vector<glm::vec3> brightness = std::vector<glm::vec3>();
-	std::vector<glm::vec3> normals = std::vector<glm::vec3>();
-	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, normals, brightness, 0.35f);
+	std::vector<ModelVertex> verts = std::vector<ModelVertex>();
+	std::vector<ModelTriangle> model = loadObj("/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", materials, verts, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
@@ -280,6 +285,13 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	std::vector<glm::vec3> vertexColours = std::vector<glm::vec3>();
+	for (int i = 0; i < verts.size(); i++)
+	{
+		vertexColours.push_back(glm::vec3(0,0,0));
+	}
+	
+
 	bool rendered = false;
 	
 	while (true) {
@@ -291,17 +303,17 @@ int main(int argc, char *argv[]) {
 
 		if (renderMode == 0)
 		{
-			wireframeDraw(window, model);
+			wireframeDraw(window, model, verts);
 			rendered = false;
 		}
 		else if (renderMode == 1)
 		{
-			rasteriseDraw(window, depthBuffer, model);
+			rasteriseDraw(window, depthBuffer, model, verts);
 			rendered = false;
 		}
 		else if (renderMode == 2 && !rendered)
 		{
-			traceDraw(window, model, lights);
+			traceDraw(window, model, verts, lights);
 			rendered = true;
 		}
 

@@ -7,14 +7,15 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "ModelTriangle.h"
+#include "ModelVertex.h"
 
 int getSubStringIndex(std::string s, char delimiter, int startIndex);
 
 std::string stringRange(std::string s, int from, int to);
 
-glm::vec3 vec3FromString(std::string s, float scale);
+ModelVertex vertFromString(std::string s, float scale);
 
-ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts, Colour col);
+ModelTriangle triFromString(std::string s, std::vector<ModelVertex> &verts, Colour col);
 
 std::string getMatNameFromString(std::string s);
 
@@ -22,4 +23,4 @@ Colour getColourFromString(std::string s);
 
 std::unordered_map<std::string, Colour> loadMtl(std::string path);
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<glm::vec3> &normals, std::vector<glm::vec3> &brightness, float scale);
+std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<ModelVertex> &verts, float scale);

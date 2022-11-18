@@ -41,23 +41,26 @@ glm::vec3 Camera::getRayDirection(float u, float v)
 	return glm::normalize(glm::vec3(dir));
 }
 
-RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 &origin, glm::vec3 &rayDirection, std::vector<ModelTriangle> &triangles)
+RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 &origin, glm::vec3 &rayDirection, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts)
 {
 	RayTriangleIntersection closestIntersection = RayTriangleIntersection(glm::vec3(0,0,0), 10000000, ModelTriangle(), -1);
 
 	for (int i = 0; i < triangles.size(); i++)
 	{
 		ModelTriangle triangle = triangles[i];
-		glm::vec3 e0 = triangle.vertices[1] - triangle.vertices[0];
-		glm::vec3 e1 = triangle.vertices[2] - triangle.vertices[0];
-		glm::vec3 SPVector = origin - triangle.vertices[0];
+		glm::vec3 v0 = verts[triangle.vertices[0]].pos;
+		glm::vec3 v1 = verts[triangle.vertices[1]].pos;
+		glm::vec3 v2 = verts[triangle.vertices[2]].pos;
+		glm::vec3 e0 = v1 - v0;
+		glm::vec3 e1 = v2 - v0;
+		glm::vec3 SPVector = origin - v0;
 		glm::mat3 DEMatrix(-rayDirection, e0, e1);
 		glm::vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
 		bool hit = (possibleSolution.x > 0) && (possibleSolution.y >= 0.0) && (possibleSolution.y <= 1.0) && (possibleSolution.z >= 0.0) && (possibleSolution.z <= 1.0) && (possibleSolution.y + possibleSolution.z) <= 1.0;
 		if (hit && possibleSolution.x < closestIntersection.distanceFromCamera && possibleSolution.x >= 0.025f)
 		{
 			float closestDistance = possibleSolution.x;
-			glm::vec3 closestPoint = triangle.vertices[0] + e0 * possibleSolution.y + e1 * possibleSolution.z;
+			glm::vec3 closestPoint = v0 + e0 * possibleSolution.y + e1 * possibleSolution.z;
 			closestIntersection = RayTriangleIntersection(closestPoint, closestDistance, triangle, i);
 		}
 	}
@@ -65,9 +68,9 @@ RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 &origin, glm::v
 	return closestIntersection;
 }
 
-bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<ModelTriangle> &triangles, glm::vec3 &lightDir)
+bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, glm::vec3 &lightDir)
 {
-	RayTriangleIntersection shadowIntersection = Camera::getClosestIntersection(intersection.intersectionPoint, lightDir, triangles);
+	RayTriangleIntersection shadowIntersection = Camera::getClosestIntersection(intersection.intersectionPoint, lightDir, triangles, verts);
 	if (shadowIntersection.triangleIndex != -1 && shadowIntersection.distanceFromCamera < 1)
 	{
 		return true;
@@ -75,13 +78,13 @@ bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<ModelTr
 	return false;
 }
 
-Colour Camera::renderTraced(int x, int y, std::vector<ModelTriangle> &triangles, std::vector<Light> &lights)
+Colour Camera::renderTraced(int x, int y, std::vector<ModelTriangle> &triangles, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
-	RayTriangleIntersection intersection = Camera::getClosestIntersection(cameraPos, rayDir, triangles);
+	RayTriangleIntersection intersection = Camera::getClosestIntersection(cameraPos, rayDir, triangles, verts);
 
-	glm::vec3 normal = intersection.intersectedTriangle.normal;
+	glm::vec3 normal = glm::vec3(0,1,0);
 
 	glm::vec3 albedo = colourToVector(intersection.intersectedTriangle.colour);
 	glm::vec3 lightIntensity = glm::vec3(0,0,0);
@@ -96,7 +99,7 @@ Colour Camera::renderTraced(int x, int y, std::vector<ModelTriangle> &triangles,
 	for (int i = 0; i < lights.size(); i++)
 	{
 		glm::vec3 lightDir = lights[i].position - intersection.intersectionPoint; 
-		if (!Camera::inShadow(intersection, triangles, lightDir))
+		if (!Camera::inShadow(intersection, triangles, verts, lightDir))
 		{
 			glm::vec3 lightCol = lights[i].colour / (2.0f * (float)M_PI * glm::dot(lightDir, lightDir));
 			lightDir = glm::normalize(lightDir);

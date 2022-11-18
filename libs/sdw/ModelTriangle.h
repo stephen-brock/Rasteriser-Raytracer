@@ -7,12 +7,10 @@
 #include "TexturePoint.h"
 
 struct ModelTriangle {
-	std::array<glm::vec3, 3> vertices{};
-	std::array<TexturePoint, 3> texturePoints{};
+	std::array<int, 3> vertices{};
 	Colour colour{};
-	glm::vec3 normal{};
 
 	ModelTriangle();
-	ModelTriangle(const glm::vec3 &v0, const glm::vec3 &v1, const glm::vec3 &v2, Colour trigColour);
+	ModelTriangle(const int &v0, const int &v1, const int &v2, Colour trigColour);
 	friend std::ostream &operator<<(std::ostream &os, const ModelTriangle &triangle);
 };

@@ -31,7 +31,7 @@ std::string stringRange(std::string s, int from, int to)
 	return sub;
 }
 
-glm::vec3 vec3FromString(std::string s, float scale)
+ModelVertex vertFromString(std::string s, float scale)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	float x = std::stof(stringRange(s, 2, xTo));
@@ -39,10 +39,11 @@ glm::vec3 vec3FromString(std::string s, float scale)
 	float y = std::stof(stringRange(s, xTo + 1, yTo));
 	float z = std::stof(stringRange(s, yTo + 1, s.length()));
 
-	return glm::vec3(x, y, z) * scale;
+	ModelVertex vert = ModelVertex(glm::vec3(x, y, z) * scale);
+	return vert;
 }
 
-ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts, Colour col)
+ModelTriangle triFromString(std::string s, std::vector<ModelVertex> &verts, Colour col)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	int x = std::stoi(stringRange(s, 2, xTo)) - 1;
@@ -50,13 +51,15 @@ ModelTriangle triFromString(std::string s, std::vector<glm::vec3> &verts, Colour
 	int y = std::stoi(stringRange(s, xTo + 1, yTo)) - 1;
 	int z = std::stoi(stringRange(s, yTo + 1, s.length())) - 1;
 
-	glm::vec3 v0 = verts[x];
-	glm::vec3 v1 = verts[y];
-	glm::vec3 v2 = verts[z];
-
+	glm::vec3 v0 = verts[x].pos;
+	glm::vec3 v1 = verts[y].pos;
+	glm::vec3 v2 = verts[z].pos;
 	glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
-	ModelTriangle tri =ModelTriangle(verts[x], verts[y], verts[z], col);
-	tri.normal = normal;
+	
+	verts[x].normal += normal;
+	verts[y].normal += normal;
+	verts[z].normal += normal;
+	ModelTriangle tri = ModelTriangle(x, y, z, col);
 	return tri;
 }
 
@@ -97,12 +100,11 @@ std::unordered_map<std::string, Colour> loadMtl(std::string path)
 	return materials;
 }
 
-std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<glm::vec3> &normals, std::vector<glm::vec3> &brightness, float scale) 
+std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::string, Colour> &materials, std::vector<ModelVertex> &verts, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
 	std::vector<ModelTriangle> triangles = std::vector<ModelTriangle>();
-	std::vector<glm::vec3> verts = std::vector<glm::vec3>();
 	Colour currentColour = Colour(-1,-1,-1);
 	while (getline(file, line))
 	{
@@ -115,9 +117,8 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 			{
 				if (line[0] == 'v')
 				{
-					verts.push_back(vec3FromString(line, scale));
-					normals.push_back(glm::vec3(0,0,0));
-					brightness.push_back(glm::vec3(0,0,0));
+					ModelVertex newVertex = vertFromString(line, scale);
+					verts.push_back(newVertex);
 				}
 				else if (line[0] == 'f')
 				{
@@ -128,6 +129,12 @@ std::vector<ModelTriangle> loadObj(std::string path, std::unordered_map<std::str
 	}
 
 	file.close();
+
+	for (int i = 0; i < verts.size(); i++)
+	{
+		verts[i].normal = glm::normalize(verts[i].normal);
+	}
+	
 
 	return triangles;
 }
