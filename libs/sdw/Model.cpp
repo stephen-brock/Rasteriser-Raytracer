@@ -28,6 +28,16 @@ void Model::AddTriangle(int v0, int v1, int v2)
 	triangles->push_back(ModelTriangle(v0, v1, v2, vectorToColour(material->sampleAlbedo(0,0))));
 }
 
+void Model::NormaliseNormals()
+{
+    for (int i = 0; i < verts->size(); i++)
+    {
+        ModelVertex& v = (verts->at(i));
+        v.normal = glm::normalize(v.normal);
+    }
+    
+}
+
 Model::~Model()
 {
     delete verts;

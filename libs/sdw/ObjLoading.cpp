@@ -121,6 +121,7 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 				}
 			}
 			fromCount += model->verts->size();
+			model->NormaliseNormals();
 			models.push_back(model);
 		}
 	}

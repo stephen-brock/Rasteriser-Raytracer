@@ -14,4 +14,5 @@ class Model
         ~Model();
         Model(Material* material);
         void AddTriangle(int v0, int v1, int v2);
+        void NormaliseNormals();
 };

@@ -111,7 +111,6 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 	lightIntensity += ambientIntensity;
 
 	glm::vec3 finalColour = albedo * lightIntensity + specularIntensity;
-	
 	return finalColour;
 }
 
@@ -141,38 +140,36 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	return render(albedo, normal, intersection, rayDir, models, lights);
 }
 
-void Camera::initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<glm::vec3> &vertexColours)
+void Camera::initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
 {
-	return;
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
 
-	for (int i = 0; i < 0; i++)
+	for (int m = 0; m < models.size(); m++)
 	{
-		vertexColours.push_back(glm::vec3(0,0,0));
+		vertexColours.push_back(std::vector<glm::vec3>());
+		for (int i = 0; i < models[m]->verts->size(); i++)
+		{
+			vertexColours[m].push_back(glm::vec3(0,0,0));
+		}
 	}
-	
 
 	for (int m = 0; m < models.size(); m++)
 	{
 		Model& model = *models[m];
+		glm::vec3 albedo = model.material->sampleAlbedo(0,0);
 
-		for (int i = 0; i < model.triangles->size(); i++)
+		for (int i = 0; i < model.verts->size(); i++)
 		{
-			ModelTriangle& tri = model.triangles->at(i);
-			glm::vec3 albedo = colourToVector(tri.colour);
-			for (int j = 0; j < 3; j++)
-			{
-				ModelVertex vert = model.verts->at(tri.vertices[j]);
-				glm::vec3 rayDir = glm::normalize(vert.pos - cameraPos);
-				RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, tri.vertices[j], m);
-				vertexColours[tri.vertices[j]] = render(albedo, vert.normal, intersection, rayDir, models, lights);
-			}
+			ModelVertex vert = model.verts->at(i);
+			glm::vec3 rayDir = glm::normalize(vert.pos - cameraPos);
+			RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, -1, m);
+			vertexColours[m][i] = render(albedo, vert.normal, intersection, rayDir, models, lights);
 		}
 	}
 	
 }
 
-Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<glm::vec3> &vertexColours)
+Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
@@ -190,10 +187,9 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 	float v = intersection.v;
 	float w = 1 - u - v;
 
-	glm::vec3 v0 = vertexColours[tri.vertices[0]];
-	glm::vec3 v1 = vertexColours[tri.vertices[1]];
-	glm::vec3 v2 = vertexColours[tri.vertices[2]];
-
+	glm::vec3 v0 = vertexColours[intersection.modelIndex][tri.vertices[0]];
+	glm::vec3 v1 = vertexColours[intersection.modelIndex][tri.vertices[1]];
+	glm::vec3 v2 = vertexColours[intersection.modelIndex][tri.vertices[2]];
 	return vectorToColour(v0 * w + v1 * u + v2 * v); 
 }
 

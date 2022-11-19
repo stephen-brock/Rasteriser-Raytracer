@@ -14,8 +14,8 @@ class Camera {
         glm::vec3 getCanvasIntersectionPoint(glm::vec4 vertexPosition);
         void updateTransform();
         Colour renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights);
-        Colour renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<glm::vec3> &vertexColours);
-        void initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<glm::vec3> &vertexColours);
+        Colour renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
+        void initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         Camera();
         Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height);
     private:

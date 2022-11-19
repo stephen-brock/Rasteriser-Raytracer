@@ -20,7 +20,7 @@
 #define WIDTH 400
 #define HEIGHT 300
 
-const bool GouraudShading = false;
+const bool GouraudShading = true;
 
 Camera camera;
 int renderMode = 1;
@@ -278,7 +278,7 @@ void traceDrawGouraud(DrawingWindow &window, std::vector<Model*> &models, std::v
 
 	camera.updateTransform();
 
-	std::vector<glm::vec3> vertexColours = std::vector<glm::vec3>();
+	std::vector<std::vector<glm::vec3>> vertexColours = std::vector<std::vector<glm::vec3>>();
 	camera.initialiseGouraud(models, lights, vertexColours);
 	
 	for (int i = 0; i < window.width; i++)
