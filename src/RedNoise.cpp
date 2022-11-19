@@ -20,7 +20,7 @@
 #define WIDTH 400
 #define HEIGHT 300
 
-const bool GouraudShading = true;
+const bool GouraudShading = false;
 
 Camera camera;
 int renderMode = 1;
@@ -99,10 +99,8 @@ int clampToScreen(int x, int bound)
 
 //triangle[0] should be the non flat point
 //clockwise indicies after
-void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffer, DrawingWindow &window) 
+void fillHalfTriangle(CanvasTriangle triangle, Material* material, float **depthBuffer, DrawingWindow &window) 
 {
-	uint32_t col = colourToInt(colour);
-
 	int fromY = triangle[1].y;
 	int toY = triangle[0].y;
 
@@ -120,8 +118,9 @@ void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffe
 	for (int j = clampedFromY; j <= clampedToY && clampedToY != clampedFromY; j++)
 	{
 		double t = (double)(j - fromY) / (double)(ySteps);
-		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], swappedY ? 1 - t : t);
-		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], swappedY ? 1 - t : t);
+		t = swappedY ? 1 - t : t;
+		CanvasPoint fromPoint = lerpCanvasPoint(triangle[2], triangle[0], t);
+		CanvasPoint toPoint = lerpCanvasPoint(triangle[1], triangle[0], t);
 		int fromX = fromPoint.x;
 		int toX = toPoint.x;
 
@@ -139,12 +138,15 @@ void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffe
 		for (int i = clampedFromX; i <= clampedToX && clampedToX != clampedFromX; i++)
 		{
 			double tx = (double)(i - fromX) / (double)xSteps;
-			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, swappedX ? 1 - tx : tx);
+			tx = swappedX ? 1 - tx : tx;
+			CanvasPoint point = lerpCanvasPoint(fromPoint, toPoint, tx);
 			
 			float d = depthBuffer[i][j];
-			float id = 1 / point.depth;
-			if (point.depth > 0 && id > d)
+			double id = point.depth;
+			if (id > d)
 			{
+				// std::cout << id<< std::endl;
+				uint32_t col = colourToInt(vectorToColour(material->sampleAlbedo(point.texturePoint.x / id, point.texturePoint.y / id)));
 				window.setPixelColour(i, j, col);
 				depthBuffer[i][j] = id;
 			}
@@ -152,7 +154,7 @@ void fillHalfTriangle(CanvasTriangle triangle, Colour colour, float **depthBuffe
 	}
 }
 
-void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, DrawingWindow &window)
+void fillTriangle(CanvasTriangle triangle, Material* material, float **depthBuffer, DrawingWindow &window)
 {
 	triangle = sortTriangle(triangle);
 	CanvasPoint center = centerPoint(triangle);
@@ -162,8 +164,8 @@ void fillTriangle(CanvasTriangle triangle, Colour col, float **depthBuffer, Draw
 	CanvasTriangle triangleTop = CanvasTriangle(triangle[0], right, left);
 	CanvasTriangle triangleBottom = CanvasTriangle(triangle[2], left, right);
 	
-	fillHalfTriangle(triangleTop, col, depthBuffer, window);
-	fillHalfTriangle(triangleBottom, col, depthBuffer, window);
+	fillHalfTriangle(triangleTop, material, depthBuffer, window);
+	fillHalfTriangle(triangleBottom, material, depthBuffer, window);
 }
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
@@ -221,7 +223,6 @@ void wireframeDraw(DrawingWindow &window, std::vector<Model*> &models)
 			strokeTriangle(triangle, tri.colour, window);
 		}
 	}
-	
 }
 
 void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model*> &models)
@@ -237,17 +238,23 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 		for (int i = 0; i < model.triangles->size(); i++)
 		{
 			ModelTriangle tri = model.triangles->at(i);
-			glm::vec3 mv1 = model.verts->at(tri.vertices[0]).pos;
-			glm::vec3 mv2 = model.verts->at(tri.vertices[1]).pos;
-			glm::vec3 mv3 = model.verts->at(tri.vertices[2]).pos;
-			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
-			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
-			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
+			ModelVertex& mv1 = model.verts->at(tri.vertices[0]);
+			ModelVertex& mv2 = model.verts->at(tri.vertices[1]);
+			ModelVertex& mv3 = model.verts->at(tri.vertices[2]);
+			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1.pos, 1));
+			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2.pos, 1));
+			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3.pos, 1));
 			auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+			p1.texturePoint = TexturePoint(mv1.texcoord.x / p1.depth, mv1.texcoord.y / p1.depth);
+			p1.depth = 1 / p1.depth;
 			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+			p2.texturePoint = TexturePoint(mv2.texcoord.x / p2.depth, mv2.texcoord.y / p2.depth);
+			p2.depth = 1 / p2.depth;
 			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+			p3.texturePoint = TexturePoint(mv3.texcoord.x / p3.depth, mv3.texcoord.y / p3.depth);
+			p3.depth = 1 / p3.depth;
 			CanvasTriangle triangle(p1,p2,p3);
-			fillTriangle(triangle, tri.colour, depthBuffer, window);
+			fillTriangle(triangle, model.material, depthBuffer, window);
 		}
 	}
 }

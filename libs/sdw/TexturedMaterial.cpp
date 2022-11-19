@@ -24,7 +24,9 @@ glm::vec3 TexturedMaterial::intToVector(uint32_t colour)
 
 uint32_t TexturedMaterial::sampleTexture(float u, float v)
 {
-	return this->textureMap.pixels[floor(fmod(v, 1) * this->textureMap.height) * this->textureMap.width + floor(fmod(u, 1) * this->textureMap.width)];
+    u = fmod(fabs(u), 1);
+    v = fmod(fabs(v), 1);
+	return this->textureMap.pixels[floor(u * this->textureMap.height) * this->textureMap.width + floor(v * this->textureMap.width)];
 }
 
 glm::vec3 TexturedMaterial::sampleAlbedo(float u, float v)
