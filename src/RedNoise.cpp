@@ -197,54 +197,63 @@ void clearDepthBuffer(float **depthBuffer, DrawingWindow &window)
 	}
 }
 
-void wireframeDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts)
+void wireframeDraw(DrawingWindow &window, std::vector<Model*> &models)
 {
 	window.clearPixels();
 	camera.updateTransform();
 	
-	for (int i = 0; i < model.size(); i++)
+	for (int m = 0; m < models.size(); m++)
 	{
-		ModelTriangle tri = model[i];
-		glm::vec3 mv1 = verts[tri.vertices[0]].pos;
-		glm::vec3 mv2 = verts[tri.vertices[1]].pos;
-		glm::vec3 mv3 = verts[tri.vertices[2]].pos;
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
-		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
-		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
-		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
-		CanvasTriangle triangle(p1,p2,p3);
-		strokeTriangle(triangle, tri.colour, window);
+		Model& model = *models[m];
+		for (int i = 0; i < model.triangles->size(); i++)
+		{
+			ModelTriangle tri = model.triangles->at(i);
+			glm::vec3 mv1 = model.verts->at(tri.vertices[0]).pos;
+			glm::vec3 mv2 = model.verts->at(tri.vertices[1]).pos;
+			glm::vec3 mv3 = model.verts->at(tri.vertices[2]).pos;
+			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
+			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
+			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
+			auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+			CanvasTriangle triangle(p1,p2,p3);
+			strokeTriangle(triangle, tri.colour, window);
+		}
 	}
+	
 }
 
-void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts)
+void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model*> &models)
 {
 	clearDepthBuffer(depthBuffer, window);
 	window.clearPixels();
 
 	camera.updateTransform();
 
-	for (int i = 0; i < model.size(); i++)
+	for (int m = 0; m < models.size(); m++)
 	{
-		ModelTriangle tri = model[i];
-		glm::vec3 mv1 = verts[tri.vertices[0]].pos;
-		glm::vec3 mv2 = verts[tri.vertices[1]].pos;
-		glm::vec3 mv3 = verts[tri.vertices[2]].pos;
-		glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
-		glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
-		glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
-		auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
-		auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
-		auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
-		CanvasTriangle triangle(p1,p2,p3);
-		fillTriangle(triangle, tri.colour, depthBuffer, window);
+		Model& model = *models[m];
+		for (int i = 0; i < model.triangles->size(); i++)
+		{
+			ModelTriangle tri = model.triangles->at(i);
+			glm::vec3 mv1 = model.verts->at(tri.vertices[0]).pos;
+			glm::vec3 mv2 = model.verts->at(tri.vertices[1]).pos;
+			glm::vec3 mv3 = model.verts->at(tri.vertices[2]).pos;
+			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
+			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
+			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
+			auto p1 = CanvasPoint(v1.x, v1.y, v1.z);
+			auto p2 = CanvasPoint(v2.x, v2.y, v2.z);
+			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
+			CanvasTriangle triangle(p1,p2,p3);
+			fillTriangle(triangle, tri.colour, depthBuffer, window);
+		}
 	}
 }
 
 
-void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
+void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
@@ -254,7 +263,7 @@ void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::ve
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTraced(i, j, model, verts, lights);
+			Colour col = camera.renderTraced(i, j, models, lights);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
@@ -263,20 +272,20 @@ void traceDraw(DrawingWindow &window, std::vector<ModelTriangle> &model, std::ve
 
 
 
-void traceDrawGouraud(DrawingWindow &window, std::vector<ModelTriangle> &model, std::vector<ModelVertex> &verts, std::vector<Light> &lights)
+void traceDrawGouraud(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
 	camera.updateTransform();
 
 	std::vector<glm::vec3> vertexColours = std::vector<glm::vec3>();
-	camera.initialiseGouraud(model, verts, lights, vertexColours);
+	camera.initialiseGouraud(models, lights, vertexColours);
 	
 	for (int i = 0; i < window.width; i++)
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTracedGouraud(i, j, model, verts, lights, vertexColours);
+			Colour col = camera.renderTracedGouraud(i, j, models, lights, vertexColours);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
@@ -290,11 +299,8 @@ int main(int argc, char *argv[]) {
 	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
 	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
-	std::vector<ModelVertex> *verts = new std::vector<ModelVertex>();
-	std::vector<ModelTriangle> *model = new std::vector<ModelTriangle>();
-	loadObj(*model, "/Users/smb/Desktop/Graphics-Coursework/src/sphere.obj", *materials, *verts, 0.35f);
-
-	std::cout << (*verts).size() << std::endl;
+	std::vector<Model*> *models = new std::vector<Model*>();
+	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
 	
@@ -323,23 +329,23 @@ int main(int argc, char *argv[]) {
 
 		if (renderMode == 0)
 		{
-			wireframeDraw(window, *model, *verts);
+			wireframeDraw(window, *models);
 			rendered = false;
 		}
 		else if (renderMode == 1)
 		{
-			rasteriseDraw(window, depthBuffer, *model, *verts);
+			rasteriseDraw(window, depthBuffer, *models);
 			rendered = false;
 		}
 		else if (renderMode == 2 && !rendered)
 		{
 			if (GouraudShading)
 			{
-				traceDrawGouraud(window, *model, *verts, lights);
+				traceDrawGouraud(window, *models, lights);
 			}
 			else 
 			{
-				traceDraw(window, *model, *verts, lights);
+				traceDraw(window, *models, lights);
 			}
 			rendered = true;
 		}
@@ -354,9 +360,14 @@ int main(int argc, char *argv[]) {
 		delete item.second;
 	}
 
+	for (int i = 0; i < models->size(); i++)
+	{
+		delete models->at(i);
+	}
+	
+
 	delete materials;
-	delete verts;
-	delete model;
+	delete models;
 	
 	for (int i = 0; i < window.width; i++)
 	{

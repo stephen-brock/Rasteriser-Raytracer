@@ -6,6 +6,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include "ModelTriangle.h"
+#include "TexturedMaterial.h"
 #include "MatrixUtils.h"
 #include "ObjLoading.h"
 
@@ -43,7 +44,7 @@ glm::vec3 vertFromString(std::string s, float scale)
 	return glm::vec3(x, y, z) * scale;
 }
 
-ModelTriangle triFromString(std::string s, std::vector<ModelVertex> &verts, Colour col)
+void triFromString(Model &model, std::string s, int fromCount)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	int x = std::stoi(stringRange(s, 2, xTo)) - 1;
@@ -51,16 +52,7 @@ ModelTriangle triFromString(std::string s, std::vector<ModelVertex> &verts, Colo
 	int y = std::stoi(stringRange(s, xTo + 1, yTo)) - 1;
 	int z = std::stoi(stringRange(s, yTo + 1, s.length())) - 1;
 
-	glm::vec3 v0 = verts[x].pos;
-	glm::vec3 v1 = verts[y].pos;
-	glm::vec3 v2 = verts[z].pos;
-	glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
-	
-	verts[x].normal += normal;
-	verts[y].normal += normal;
-	verts[z].normal += normal;
-	ModelTriangle tri = ModelTriangle(x, y, z, col);
-	return tri;
+	model.AddTriangle(x - fromCount, y - fromCount, z - fromCount);
 }
 
 std::string getMatNameFromString(std::string s)
@@ -90,43 +82,48 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 		{
 			std::string name = getMatNameFromString(line);
 			getline(file, line);
-			materials[name] = new Material(colourToVector(getColourFromString(line)));
+			glm::vec3 colour = colourToVector(getColourFromString(line));
+			getline(file, line);
+			if (line[0] == 't')
+			{
+				std::string texpath = stringRange(line, 4, line.length());
+				materials[name] = new TexturedMaterial(colour, texpath);
+			}
+			else 
+			{
+				materials[name] = new Material(colour);
+			}
 		}
 	}
 }
 
-void loadObj(std::vector<ModelTriangle> &triangles, std::string path, std::unordered_map<std::string, Material*> &materials, std::vector<ModelVertex> &verts, float scale) 
+void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
-	Material* currentColour = nullptr;
+	int fromCount = 0;
 	while (getline(file, line))
 	{
 		if (line[0] == 'o') 
 		{
 			getline(file, line);
 			std::string mat = getMatNameFromString(line);
-			currentColour = materials[mat];
+			Model* model = new Model(materials[mat]);
 			while (getline(file, line) && line.length() > 0) 
 			{
 				if (line[0] == 'v')
 				{
-					verts.emplace_back(vertFromString(line, scale));
+					model->verts->push_back(ModelVertex(vertFromString(line, scale)));
 				}
 				else if (line[0] == 'f')
-				{
-					triangles.push_back(triFromString(line, verts, vectorToColour(currentColour->sampleAlbedo(0,0))));
+				{	
+					triFromString(*model, line, fromCount);
 				}
 			}
-
-			std::cout << verts.size() << std::endl;
+			fromCount += model->verts->size();
+			models.push_back(model);
 		}
 	}
 
 	file.close();
-
-	for (int i = 0; i < verts.size(); i++)
-	{
-		verts[i].normal = glm::normalize(verts[i].normal);
-	}
 }

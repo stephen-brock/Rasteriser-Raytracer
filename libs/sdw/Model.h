@@ -1,12 +1,17 @@
 #pragma once
 #include "ModelTriangle.h"
 #include <vector>
+#include "ModelVertex.h"
+#include "Material.h"
 
 class Model
 {
     public:
-        std::vector<ModelTriangle> triangles;
-        Colour* colour;
+        std::vector<ModelVertex> *verts;
+        std::vector<ModelTriangle> *triangles;
+        Material* material;
         Model();
-        Model(std::vector<ModelTriangle> triangles, Colour* colour);
+        ~Model();
+        Model(Material* material);
+        void AddTriangle(int v0, int v1, int v2);
 };

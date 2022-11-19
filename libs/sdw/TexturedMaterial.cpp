@@ -3,10 +3,10 @@
 #include "MatrixUtils.h"
 
 TexturedMaterial::TexturedMaterial() = default;
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, TextureMap texture)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, std::string &texpath)
 {
     this->colour = colour;
-    this->textureMap = texture;
+    this->textureMap = TextureMap(texpath);
 }
 
 glm::vec3 TexturedMaterial::intToVector(uint32_t colour) 
