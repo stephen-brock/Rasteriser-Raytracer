@@ -115,7 +115,7 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 				{
 					glm::vec3 pos = vertFromString(line, scale);
 					ModelVertex mv = ModelVertex(pos);
-					mv.texcoord = glm::vec2(pos.x, pos.z);
+					mv.texcoord = glm::vec2(pos.x / 2, pos.z / 2);
 					model->verts->push_back(mv);
 				}
 				else if (line[0] == 'f')

@@ -6,7 +6,7 @@
 class TexturedMaterial : public Material
 {
     public:
-        TextureMap textureMap;
+        TextureMap *textureMap;
         glm::vec3 sampleAlbedo(float u, float v);
         TexturedMaterial();
         TexturedMaterial(glm::vec3 colour, std::string &texpath);

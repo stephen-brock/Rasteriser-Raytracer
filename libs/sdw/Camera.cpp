@@ -37,7 +37,7 @@ glm::vec3 Camera::getRayDirection(float u, float v)
 	float y = (v - (float)height / 2.0) / -focalLength;
 	float x = (u - (float)width / 2.0) / focalLength;
 	glm::vec4 localDir = glm::vec4(x, y, -1, 0);
-	glm::vec4 dir = cameraToWorld * localDir;
+	glm::vec4 dir = localDir * cameraToWorld;
 	return glm::normalize(glm::vec3(dir));
 }
 
@@ -135,8 +135,20 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	ModelVertex v1 = model.verts->at(tri.vertices[1]);
 	ModelVertex v2 = model.verts->at(tri.vertices[2]);
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
-
-	glm::vec3 albedo = colourToVector(tri.colour);
+	Material* material = model.material;
+	float d0 = glm::dot(v0.pos - origin, rayDir);
+	float d1 = glm::dot(v1.pos - origin, rayDir);
+	float d2 = glm::dot(v2.pos - origin, rayDir);
+	glm::vec2 t0 = v0.texcoord;// / d0;
+	glm::vec2 t1 = v1.texcoord;// / d1;
+	glm::vec2 t2 = v2.texcoord;// / d2;
+	// d0 = 1 / d0;
+	// d1 = 1 / d1;
+	// d2 = 1 / d2;
+	glm::vec2 texcoord = t0 * w + t1 * u + t2 * v;
+	// float z = 1 / (d0 * w + d1 * u + d2 * v);
+	// texcoord *= z;
+	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
 	return render(albedo, normal, intersection, rayDir, models, lights);
 }
 

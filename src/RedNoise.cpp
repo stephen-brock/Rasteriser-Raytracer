@@ -326,12 +326,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool rendered = false;
+	//int frame = 0;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		//angle += 0.01;
-		camera.cameraToWorld = matrixTRS(glm::vec3(sin(angle) * 3,0,cos(angle) * 3), glm::vec3(0,0,M_PI));
+		if (!rendered)
+		{
+			angle += 0.01;
+		}
+		camera.cameraToWorld = matrixTRS(glm::vec3(0, sin(angle + 2) * 2, 3 + cos(angle) * 1.5f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, glm::vec3(0,0,0));
 
 		if (renderMode == 0)
@@ -344,7 +348,7 @@ int main(int argc, char *argv[]) {
 			rasteriseDraw(window, depthBuffer, *models);
 			rendered = false;
 		}
-		else if (renderMode == 2 && !rendered)
+		else if (renderMode == 2)
 		{
 			if (GouraudShading)
 			{
@@ -354,7 +358,10 @@ int main(int argc, char *argv[]) {
 			{
 				traceDraw(window, *models, lights);
 			}
+
 			rendered = true;
+			//window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
+			//frame++;
 		}
 
 		//Light debug

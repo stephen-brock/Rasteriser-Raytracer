@@ -64,8 +64,8 @@ glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin)
 {
 	glm::vec4 pos = posFromMatrix(mat);
 	glm::vec3 fwd = glm::normalize((glm::vec3)pos - origin);
-	glm::vec3 up = glm::vec3(0,1,0);
-	glm::vec3 right = glm::cross(fwd, up);
+	glm::vec3 right = glm::cross(fwd, glm::vec3(0,1,0));
+	glm::vec3 up = glm::cross(fwd, -right);
 	glm::mat4 newMat = glm::mat4(
 		right.x, up.x, fwd.x, pos.x,
 		right.y, up.y, fwd.y, pos.y,

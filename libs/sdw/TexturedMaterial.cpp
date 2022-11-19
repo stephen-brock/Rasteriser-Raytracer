@@ -6,7 +6,7 @@ TexturedMaterial::TexturedMaterial() = default;
 TexturedMaterial::TexturedMaterial(glm::vec3 colour, std::string &texpath)
 {
     this->colour = colour;
-    this->textureMap = TextureMap(texpath);
+    this->textureMap = new TextureMap(texpath);
 }
 
 glm::vec3 TexturedMaterial::intToVector(uint32_t colour) 
@@ -24,9 +24,9 @@ glm::vec3 TexturedMaterial::intToVector(uint32_t colour)
 
 uint32_t TexturedMaterial::sampleTexture(float u, float v)
 {
-    u = fmod(fabs(u), 1);
-    v = fmod(fabs(v), 1);
-	return this->textureMap.pixels[floor(u * this->textureMap.height) * this->textureMap.width + floor(v * this->textureMap.width)];
+    u = u < 0 ? 1 - fmod(-u, 1) : fmod(u, 1);
+    v = v < 0 ? 1 - fmod(-v, 1) : fmod(v, 1);
+	return this->textureMap->pixels[floor(v * this->textureMap->height) * this->textureMap->width + floor(u * this->textureMap->width)];
 }
 
 glm::vec3 TexturedMaterial::sampleAlbedo(float u, float v)
@@ -34,4 +34,7 @@ glm::vec3 TexturedMaterial::sampleAlbedo(float u, float v)
     return colour * intToVector(sampleTexture(u,v));
 }
 
-TexturedMaterial::~TexturedMaterial() = default;
+TexturedMaterial::~TexturedMaterial()
+{
+    delete textureMap;
+}
