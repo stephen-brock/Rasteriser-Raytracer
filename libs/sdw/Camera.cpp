@@ -114,6 +114,20 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 	return finalColour;
 }
 
+glm::vec3 Camera::getAlbedo(Model &model, ModelTriangle &tri, RayTriangleIntersection &intersection)
+{
+	ModelVertex v0 = model.verts->at(tri.vertices[0]);
+	ModelVertex v1 = model.verts->at(tri.vertices[1]);
+	ModelVertex v2 = model.verts->at(tri.vertices[2]);
+	Material* material = model.material;
+	glm::vec2 t0 = v0.texcoord;
+	glm::vec2 t1 = v1.texcoord;
+	glm::vec2 t2 = v2.texcoord;
+	glm::vec2 texcoord = t0 * (1 - intersection.u + intersection.v) + t1 * intersection.u + t2 * intersection.v;
+	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
+	return albedo;
+}
+
 glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights)
 {
 	RayTriangleIntersection intersection = Camera::getClosestIntersection(origin, rayDir, models);
@@ -135,20 +149,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	ModelVertex v1 = model.verts->at(tri.vertices[1]);
 	ModelVertex v2 = model.verts->at(tri.vertices[2]);
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
-	Material* material = model.material;
-	float d0 = glm::dot(v0.pos - origin, rayDir);
-	float d1 = glm::dot(v1.pos - origin, rayDir);
-	float d2 = glm::dot(v2.pos - origin, rayDir);
-	glm::vec2 t0 = v0.texcoord;// / d0;
-	glm::vec2 t1 = v1.texcoord;// / d1;
-	glm::vec2 t2 = v2.texcoord;// / d2;
-	// d0 = 1 / d0;
-	// d1 = 1 / d1;
-	// d2 = 1 / d2;
-	glm::vec2 texcoord = t0 * w + t1 * u + t2 * v;
-	// float z = 1 / (d0 * w + d1 * u + d2 * v);
-	// texcoord *= z;
-	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
+	glm::vec3 albedo = getAlbedo(model, tri, intersection);
 	return render(albedo, normal, intersection, rayDir, models, lights);
 }
 
@@ -168,13 +169,14 @@ void Camera::initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &
 	for (int m = 0; m < models.size(); m++)
 	{
 		Model& model = *models[m];
-		glm::vec3 albedo = model.material->sampleAlbedo(0,0);
 
 		for (int i = 0; i < model.verts->size(); i++)
 		{
-			ModelVertex vert = model.verts->at(i);
+			ModelVertex &vert = model.verts->at(i);
 			glm::vec3 rayDir = glm::normalize(vert.pos - cameraPos);
 			RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, -1, m);
+			glm::vec3 albedo = model.material->sampleAlbedo(vert.normal.x, vert.normal.y);
+			
 			vertexColours[m][i] = render(albedo, vert.normal, intersection, rayDir, models, lights);
 		}
 	}
