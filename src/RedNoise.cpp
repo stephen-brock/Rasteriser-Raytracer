@@ -20,7 +20,7 @@
 #define WIDTH 400
 #define HEIGHT 300
 
-const bool GouraudShading = true;
+const bool GouraudShading = false;
 
 Camera camera;
 int renderMode = 1;
@@ -297,21 +297,24 @@ void traceDrawGouraud(DrawingWindow &window, std::vector<Model*> &models, std::v
 	}
 }
 
-void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 colour, int width, float size)
+void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 colour, int width, int shells, float size)
 {
-	int samples = width * width * width;
+	int samples = width * width * width * shells;
 	colour /= samples;
-	center = width / 2;
-	for (int i = 0; i < width; i++)
+	float center = (width - 1) / 2.0f;
+	for (int r = 0; r < shells; r++)
 	{
-		for (int j = 0; j < width; j++)
+		float radius = size * ((float)(r + 1) / shells);
+		for (int i = 0; i < width; i++)
 		{
-			for (int k = 0; k < width; k++)
+			for (int j = 0; j < width; j++)
 			{
-				glm::vec3 offset = glm::vec3((i - center) * size, (j - center) * size, (k - center) * size);
-				lights.push_back(Light(centerPos + offset, colour));
+				for (int k = 0; k < width; k++)
+				{
+					glm::vec3 offset = glm::vec3(i - center, j - center, k - center);
+					lights.emplace_back(centerPos + glm::normalize(offset) * radius, colour);
+				}
 			}
-			
 		}
 	}
 }
@@ -326,8 +329,8 @@ int main(int argc, char *argv[]) {
 	std::vector<Model*> *models = new std::vector<Model*>();
 	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
-	//lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
-	createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 4, 0.1f);
+	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
+	//createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 2, 2, 0.05f);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height);
