@@ -297,26 +297,30 @@ void traceDrawGouraud(DrawingWindow &window, std::vector<Model*> &models, std::v
 	}
 }
 
-void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 colour, int width, int shells, float size)
+void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 colour, int segments, int heightSegments, float size, int shells = 1)
 {
-	int samples = width * width * width * shells;
+	int samples = segments * heightSegments * shells + 2;
 	colour /= samples;
-	float center = (width - 1) / 2.0f;
+	float angleIncrement = 2 * M_PI / segments;
+	float heightCenter = (heightSegments) / 2.0f;
 	for (int r = 0; r < shells; r++)
 	{
 		float radius = size * ((float)(r + 1) / shells);
-		for (int i = 0; i < width; i++)
+		for (int i = 0; i < segments; i++)
 		{
-			for (int j = 0; j < width; j++)
+			float angle = i * angleIncrement;
+			for (int j = 0; j < heightSegments; j++)
 			{
-				for (int k = 0; k < width; k++)
-				{
-					glm::vec3 offset = glm::vec3(i - center, j - center, k - center);
-					lights.emplace_back(centerPos + glm::normalize(offset) * radius, colour);
-				}
+				float tj = 4.0f * (float)(j - heightCenter + 1) / (heightSegments + 1);
+				glm::vec3 offset = glm::vec3(sin(angle), tj, cos(angle));
+				std::cout << angle << " | " << offset.x << " " << offset.y << " " << offset.z << std::endl;
+				lights.emplace_back(centerPos + offset * radius, colour);
 			}
 		}
 	}
+
+	lights.emplace_back(centerPos + glm::vec3(0,size,0), colour);
+	lights.emplace_back(centerPos + glm::vec3(0,-size,0), colour);
 }
 
 int main(int argc, char *argv[]) {
@@ -329,8 +333,8 @@ int main(int argc, char *argv[]) {
 	std::vector<Model*> *models = new std::vector<Model*>();
 	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
-	//createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 2, 2, 0.05f);
+	//lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
+	createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 3, 1, 0.05f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height);
@@ -346,7 +350,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool rendered = false;
-	//int frame = 0;
+	int frame = 0;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
@@ -380,8 +384,8 @@ int main(int argc, char *argv[]) {
 			}
 
 			rendered = true;
-			//window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
-			//frame++;
+			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
+			frame++;
 		}
 
 		//Light debug
