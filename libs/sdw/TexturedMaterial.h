@@ -2,6 +2,7 @@
 #include "Material.h"
 #include <glm/glm.hpp>
 #include "TextureMap.h"
+#include "MatrixUtils.h"
 
 class TexturedMaterial : public Material
 {
@@ -14,5 +15,4 @@ class TexturedMaterial : public Material
         
     private:
         uint32_t sampleTexture(float u, float v);
-        glm::vec3 intToVector(uint32_t colour); 
 };

@@ -20,3 +20,5 @@ glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin);
 Colour vectorToColour(glm::vec3 col);
 
 glm::vec3 colourToVector(Colour col);
+
+glm::vec3 intToVector(uint32_t colour); 

@@ -29,6 +29,13 @@ TextureMap::TextureMap(const std::string &filename) {
 	inputStream.close();
 }
 
+uint32_t TextureMap::sample(float u, float v)
+{
+    u = u < 0 ? 1 - fmod(-u, 1) : fmod(u, 1);
+    v = v < 0 ? 1 - fmod(-v, 1) : fmod(v, 1);
+	return pixels[floor(v * height) * width + floor(u * width)];
+}
+
 std::ostream &operator<<(std::ostream &os, const TextureMap &map) {
 	os << "(" << map.width << " x " << map.height << ")";
 	return os;

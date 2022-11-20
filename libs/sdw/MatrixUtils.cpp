@@ -90,3 +90,17 @@ glm::vec3 colourToVector(Colour col)
 {
 	return glm::vec3(col.red / 255.0, col.green / 255.0, col.blue / 255.0);
 }
+
+
+glm::vec3 intToVector(uint32_t colour) 
+{
+    //const uint32_t alphaMask = 0xFF000000;
+    const uint32_t redMask = 0x00FF0000;
+    const uint32_t greenMask = 0x0000FF00;
+    const uint32_t blueMask = 0x000000FF;
+    //int a = (colour & alphaMask) >> 24;
+    int r = (colour & redMask) >> 16;
+    int g = (colour & greenMask) >> 8;
+    int b = (colour & blueMask);
+	return glm::vec3(r / 255.0f, g / 255.0f, b / 255.0f);
+}

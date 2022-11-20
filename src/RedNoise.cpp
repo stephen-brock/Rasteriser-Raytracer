@@ -231,6 +231,17 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 
 	camera.updateTransform();
 
+	for (int i = 0; i < window.width; i++)
+	{
+		for (int j = 0; j < window.height; j++)
+		{
+			glm::vec3 rayDir = camera.getRayDirection(i, j);
+			window.setPixelColour(i, j, colourToInt(vectorToColour(camera.environment->sampleEnvironment(rayDir))));
+		}
+		
+	}
+	
+
 	for (int m = 0; m < models.size(); m++)
 	{
 		Model& model = *models[m];
@@ -330,6 +341,8 @@ int main(int argc, char *argv[]) {
 
 	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
+	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/texture.ppm"); 
+
 	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
 	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
@@ -338,7 +351,7 @@ int main(int argc, char *argv[]) {
 	createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 3, 2, 0.10f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
-	camera = Camera(200, cameraToWorld, window.width, window.height);
+	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
 	for (int i = 0; i < window.width; i++)
@@ -402,7 +415,7 @@ int main(int argc, char *argv[]) {
 		delete models->at(i);
 	}
 	
-
+	delete environment;
 	delete materials;
 	delete models;
 	

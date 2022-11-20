@@ -15,12 +15,13 @@ Camera::Camera()
 	height = 0;
 }
 
-Camera::Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height)
+Camera::Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height, Environment* environment)
 {
 	this->focalLength = focalLength;
 	this->cameraToWorld = cameraToWorld;
 	this->width = width;
 	this->height = height;
+	this->environment = environment;
 }
 
 glm::vec3 Camera::getCanvasIntersectionPoint(glm::vec4 vertexPosition)
@@ -136,7 +137,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 
 	if (intersection.triangleIndex == -1)
 	{
-		return glm::vec3(0,0,0);
+		return environment->sampleEnvironment(rayDir);
 	}
 
 	Model &model = *models[intersection.modelIndex];
@@ -201,7 +202,7 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 
 	if (intersection.triangleIndex == -1)
 	{
-		return Colour(0,0,0);
+		return vectorToColour(environment->sampleEnvironment(rayDir));
 	}
 	Model &model = *models[intersection.modelIndex];
 	ModelTriangle tri = model.triangles->at(intersection.triangleIndex);

@@ -6,18 +6,21 @@
 #include "Light.h"
 #include "ModelVertex.h"
 #include "Model.h"
+#include "Environment.h"
 
 class Camera {
     public:
         glm::mat4 cameraToWorld;
         float focalLength;
+        Environment* environment;
         glm::vec3 getCanvasIntersectionPoint(glm::vec4 vertexPosition);
+        glm::vec3 getRayDirection(float x, float y);
         void updateTransform();
         Colour renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights);
         Colour renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         void initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         Camera();
-        Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height);
+        Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height, Environment* environment);
     private:
         static RayTriangleIntersection getClosestIntersection(glm::vec3 &origin, glm::vec3 &dir, std::vector<Model*> &models);
         static bool inShadow(RayTriangleIntersection &intersection, std::vector<Model*> &models, glm::vec3 &lightDir);
@@ -27,5 +30,4 @@ class Camera {
         glm::mat4 worldToCamera;
         int width;
         int height;
-        glm::vec3 getRayDirection(float x, float y);
 };
