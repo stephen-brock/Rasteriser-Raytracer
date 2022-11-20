@@ -13,6 +13,7 @@ tex /Users/smb/Desktop/Graphics-Coursework/src/texture.ppm
 
 newmtl Blue
 Kd 0.000000 0.000000 1.000000
+mirror
 
 newmtl Yellow
 Kd 1.000000 1.000000 0.000000

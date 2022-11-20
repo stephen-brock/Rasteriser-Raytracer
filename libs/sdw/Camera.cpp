@@ -7,6 +7,8 @@
 #include "Light.h"
 #include <iostream>
 
+const int MaxRayDepth = 4;
+
 Camera::Camera()
 {
 	width = 0;
@@ -128,7 +130,7 @@ glm::vec3 Camera::getAlbedo(Model &model, ModelTriangle &tri, RayTriangleInterse
 	return albedo;
 }
 
-glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights)
+glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights, int currentDepth)
 {
 	RayTriangleIntersection intersection = Camera::getClosestIntersection(origin, rayDir, models);
 
@@ -137,11 +139,11 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		return glm::vec3(0,0,0);
 	}
 
+	Model &model = *models[intersection.modelIndex];
+
 	float u = intersection.u;
 	float v = intersection.v;
 	float w = 1 - u - v;
-
-	Model &model = *models[intersection.modelIndex];
 
 	ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
 
@@ -149,6 +151,13 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	ModelVertex &v1 = model.verts->at(tri.vertices[1]);
 	ModelVertex &v2 = model.verts->at(tri.vertices[2]);
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
+
+	if (model.material->mirror && currentDepth < MaxRayDepth)
+	{
+		glm::vec3 reflectDir = glm::reflect(rayDir, normal);
+		return renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1);
+	}
+
  	glm::vec3 albedo = getAlbedo(model, tri, intersection);
 	return render(albedo, normal, intersection, rayDir, models, lights);
 }
