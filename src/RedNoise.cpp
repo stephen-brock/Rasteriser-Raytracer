@@ -145,7 +145,6 @@ void fillHalfTriangle(CanvasTriangle triangle, Material* material, float **depth
 			double id = point.depth;
 			if (id > d)
 			{
-				// std::cout << id<< std::endl;
 				uint32_t col = colourToInt(vectorToColour(material->sampleAlbedo(point.texturePoint.x / id, point.texturePoint.y / id)));
 				window.setPixelColour(i, j, col);
 				depthBuffer[i][j] = id;
@@ -302,7 +301,7 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 	int samples = segments * heightSegments * shells + 2;
 	colour /= samples;
 	float angleIncrement = 2 * M_PI / segments;
-	float heightCenter = (heightSegments) / 2.0f;
+	// float heightCenter = (heightSegments) / 2.0f;
 	for (int r = 0; r < shells; r++)
 	{
 		float radius = size * ((float)(r + 1) / shells);
@@ -311,9 +310,11 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 			float angle = i * angleIncrement;
 			for (int j = 0; j < heightSegments; j++)
 			{
-				float tj = 4.0f * (float)(j - heightCenter + 1) / (heightSegments + 1);
-				glm::vec3 offset = glm::vec3(sin(angle), tj, cos(angle));
-				std::cout << angle << " | " << offset.x << " " << offset.y << " " << offset.z << std::endl;
+				float tj = (float)(j + 1) / (heightSegments + 1);
+				//float tj = 4.0f * (float)(j - heightCenter + 1) / (heightSegments + 1);
+				float cosj = cos(tj * M_PI);
+				float sinj = sin(tj * M_PI);
+				glm::vec3 offset = glm::vec3(sin(angle) * sinj, cosj, cos(angle) * sinj);
 				lights.emplace_back(centerPos + offset * radius, colour);
 			}
 		}
@@ -334,7 +335,7 @@ int main(int argc, char *argv[]) {
 	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
 	//lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10)));
-	createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 3, 1, 0.05f, 1);
+	createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(10,10,10), 3, 2, 0.10f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height);
@@ -387,8 +388,6 @@ int main(int argc, char *argv[]) {
 			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
 			frame++;
 		}
-
-		//Light debug
 
 		window.renderFrame();
 	}
