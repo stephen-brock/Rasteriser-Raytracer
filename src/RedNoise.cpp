@@ -231,17 +231,6 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 
 	camera.updateTransform();
 
-	for (int i = 0; i < window.width; i++)
-	{
-		for (int j = 0; j < window.height; j++)
-		{
-			glm::vec3 rayDir = camera.getRayDirection(i, j);
-			window.setPixelColour(i, j, colourToInt(vectorToColour(camera.environment->sampleEnvironment(rayDir))));
-		}
-		
-	}
-	
-
 	for (int m = 0; m < models.size(); m++)
 	{
 		Model& model = *models[m];
@@ -266,6 +255,18 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 			CanvasTriangle triangle(p1,p2,p3);
 			fillTriangle(triangle, model.material, depthBuffer, window);
 		}
+	}
+
+	for (int i = 0; i < window.width; i++)
+	{
+		for (int j = 0; j < window.height; j++)
+		{
+			if (depthBuffer[i][j] == 0)
+			{
+				glm::vec3 rayDir = camera.getRayDirection(i, j);
+				window.setPixelColour(i, j, colourToInt(vectorToColour(camera.environment->sampleEnvironment(rayDir))));
+			}
+		}	
 	}
 }
 
@@ -341,7 +342,7 @@ int main(int argc, char *argv[]) {
 
 	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
-	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/texture.ppm"); 
+	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/dancing_hall_1k.ppm"); 
 
 	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
