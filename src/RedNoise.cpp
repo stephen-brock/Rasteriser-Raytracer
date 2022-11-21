@@ -399,7 +399,7 @@ int main(int argc, char *argv[]) {
 				traceDraw(window, *models, lights);
 			}
 
-			rendered = true;
+			//rendered = true;
 			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
 			frame++;
 		}
