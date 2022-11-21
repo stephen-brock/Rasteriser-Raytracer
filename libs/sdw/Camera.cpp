@@ -99,7 +99,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 		glm::vec3 lightDir = lights[i].position - intersection.intersectionPoint; 
 		if (!Camera::inShadow(intersection, models, lightDir))
 		{
-			glm::vec3 lightCol = lights[i].colour / (2.0f * (float)M_PI * glm::dot(lightDir, lightDir));
+			glm::vec3 lightCol = lights[i].colour / (4.0f * (float)M_PI * glm::dot(lightDir, lightDir));
 			lightDir = glm::normalize(lightDir);
 			float ldn = glm::dot(lightDir, normal);
 			ldn = ldn < 0 ? 0 : ldn;
@@ -112,23 +112,8 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 	}
 
 	lightIntensity += ambientIntensity;
-
 	glm::vec3 finalColour = lightIntensity * albedo + specularIntensity;
 	return finalColour;
-}
-
-glm::vec3 Camera::getAlbedo(Model &model, ModelTriangle &tri, RayTriangleIntersection &intersection)
-{
-	ModelVertex v0 = model.verts->at(tri.vertices[0]);
-	ModelVertex v1 = model.verts->at(tri.vertices[1]);
-	ModelVertex v2 = model.verts->at(tri.vertices[2]);
-	Material* material = model.material;
-	glm::vec2 t0 = v0.texcoord;
-	glm::vec2 t1 = v1.texcoord;
-	glm::vec2 t2 = v2.texcoord;
-	glm::vec2 texcoord = t0 * (1 - intersection.u - intersection.v) + t1 * intersection.u + t2 * intersection.v;
-	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
-	return albedo;
 }
 
 glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights, int currentDepth)
@@ -147,6 +132,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	float w = 1 - u - v;
 
 	ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
+	Material* material = model.material;
 
 	ModelVertex &v0 = model.verts->at(tri.vertices[0]);
 	ModelVertex &v1 = model.verts->at(tri.vertices[1]);
@@ -154,7 +140,6 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
 	glm::vec3 binormal = glm::normalize(v0.binormal * w + v1.binormal * u + v2.binormal * v);
 	glm::vec3 tangent = glm::normalize(v0.tangent * w + v1.tangent * u + v2.tangent * v);
-	Material* material = model.material;
 	glm::vec2 t0 = v0.texcoord;
 	glm::vec2 t1 = v1.texcoord;
 	glm::vec2 t2 = v2.texcoord;
@@ -176,7 +161,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		}
 	}
 
- 	glm::vec3 albedo = getAlbedo(model, tri, intersection);
+	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
 	return render(albedo, normal, intersection, rayDir, models, lights);
 }
 

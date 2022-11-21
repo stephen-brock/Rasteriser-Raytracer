@@ -4,15 +4,16 @@
 
 TexturedMaterial::TexturedMaterial() = default;
 
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool mirror, std::string &texpath, std::string &normalPath)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength)
 {
     this->colour = colour;
     this->mirror = mirror;
     this->refract = false;
     this->textureMap = new TextureMap(texpath);
     this->normalMap = new TextureMap(normalPath);
+    this->normalStrength = normalStrength;
 }
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength)
 {
     this->colour = colour;
     this->mirror = mirror;
@@ -20,6 +21,7 @@ TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool refract, float refract
     this->textureMap = new TextureMap(texpath);
     this->refractiveIndex = refractiveIndex;
     this->normalMap = new TextureMap(normalPath);
+    this->normalStrength = normalStrength;
 }
 
 glm::vec3 TexturedMaterial::sampleAlbedo(float u, float v)
@@ -31,8 +33,8 @@ glm::vec3 TexturedMaterial::sampleAlbedo(float u, float v)
 void TexturedMaterial::transformNormal(glm::vec3 &normal, glm::vec3 &binormal, glm::vec3 &tangent, float u, float v)
 {
     glm::vec3 absOffset = intToVector(normalMap->sample(u,v));
-    glm::vec3 offset = (absOffset - glm::vec3(0.5f, 0.5f, 0.5f)) * 2.0f;
-    normal = (normal * offset.y + binormal * offset.x + tangent * offset.z);
+    glm::vec3 offset = (absOffset - glm::vec3(0.5f, 0.5f, 0.5f)) * 2.0f * normalStrength + glm::vec3(0,1,0) * (1 - normalStrength);
+    normal = glm::normalize(normal * offset.y + binormal * offset.x + tangent * offset.z);
 }
 
 TexturedMaterial::~TexturedMaterial()
