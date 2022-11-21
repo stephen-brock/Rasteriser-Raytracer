@@ -12,7 +12,7 @@ newmtl Green
 Kd 1.000000 1.000000 1.000000
 tex /Users/smb/Desktop/Graphics-Coursework/src/texture.ppm
 nrm /Users/smb/Desktop/Graphics-Coursework/src/texture_nrm.ppm
-str 0.4
+str 0.5
 
 newmtl Blue
 Kd 0.000000 0.000000 1.000000

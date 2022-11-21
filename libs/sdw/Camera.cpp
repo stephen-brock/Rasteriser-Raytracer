@@ -93,7 +93,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 {
 	glm::vec3 lightIntensity = glm::vec3(0,0,0);
 	glm::vec3 specularIntensity = glm::vec3(0,0,0);
-	glm::vec3 ambientIntensity = glm::vec3(0.2f,0.3f,0.35f);
+	glm::vec3 ambientIntensity = glm::vec3(0.9f,1.0f,1.5f);
 	for (int i = 0; i < lights.size(); i++)
 	{
 		glm::vec3 lightDir = lights[i].position - intersection.intersectionPoint; 
@@ -107,7 +107,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 			glm::vec3 refl = glm::reflect(rayDir, normal);
 			float rdl = glm::dot(lightDir, refl);
 			rdl = rdl < 0 ? 0 : rdl;
-			specularIntensity += lightCol * powf(rdl, 32);
+			specularIntensity += lightCol * powf(rdl, 128);
 		}
 	}
 
@@ -219,12 +219,20 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 	return vectorToColour(v0 * w + v1 * u + v2 * v); 
 }
 
+void tonemapping(glm::vec3 &colour)
+{
+	colour.x = powf(colour.x, 0.4545) * 0.15f;
+	colour.y = powf(colour.y, 0.4545) * 0.15f;
+	colour.z = powf(colour.z, 0.4545) * 0.15f;
+}
+
 Colour Camera::renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
-	
-	return vectorToColour(renderRay(cameraPos, rayDir, models, lights));
+	glm::vec3 colour = renderRay(cameraPos, rayDir, models, lights);
+	tonemapping(colour);
+	return vectorToColour(colour);
 }
 
 void Camera::updateTransform()

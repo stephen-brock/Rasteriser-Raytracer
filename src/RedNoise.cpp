@@ -349,8 +349,8 @@ int main(int argc, char *argv[]) {
 	std::vector<Model*> *models = new std::vector<Model*>();
 	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
-	//lights.push_back(Light(glm::vec3(0, 0.4f, 0), glm::vec3(20,20,20)));
-	createSoftLight(lights, glm::vec3(0, 0.8f, 0), glm::vec3(20,20,20), 3, 2, 0.15f, 2);
+	//lights.push_back(Light(glm::vec3(0, 0.8f, 0), glm::vec3(400,400,400)));
+	createSoftLight(lights, glm::vec3(0, 0.7f, 0), glm::vec3(500,500,500), 3, 3, 0.3f, 2);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,3), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
