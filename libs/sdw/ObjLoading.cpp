@@ -102,13 +102,15 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 			if (line[0] == 't')
 			{
 				std::string texpath = stringRange(line, 4, line.length());
+				getline(file, line);
+				std::string nrmpath = stringRange(line, 4, line.length());
 				if (refract)
 				{
-					materials[name] = new TexturedMaterial(colour, refract, refractiveIndex, texpath);
+					materials[name] = new TexturedMaterial(colour, refract, refractiveIndex, texpath, nrmpath);
 				}
 				else 
 				{
-					materials[name] = new TexturedMaterial(colour, mirror, texpath);
+					materials[name] = new TexturedMaterial(colour, mirror, texpath, nrmpath);
 				}
 				
 			}

@@ -20,11 +20,12 @@ void Model::AddTriangle(int v0, int v1, int v2)
 	ModelVertex &x = verts->at(v0);
 	ModelVertex &y = verts->at(v1);
 	ModelVertex &z = verts->at(v2);
-	glm::vec3 normal = glm::normalize(glm::cross(y.pos - x.pos, z.pos - x.pos));
-	
-	x.normal += normal;
-	y.normal += normal;
-	z.normal += normal;
+    glm::vec3 binormal = y.pos - x.pos;
+    glm::vec3 tangent = z.pos - x.pos;
+	glm::vec3 normal = glm::normalize(glm::cross(binormal, tangent));
+	x.addNormal(normal, binormal, tangent);
+	y.addNormal(normal, binormal, tangent);
+	z.addNormal(normal, binormal, tangent);
 	triangles->push_back(ModelTriangle(v0, v1, v2, vectorToColour(material->sampleAlbedo(0,0))));
 }
 
@@ -33,7 +34,7 @@ void Model::NormaliseNormals()
     for (int i = 0; i < verts->size(); i++)
     {
         ModelVertex& v = (verts->at(i));
-        v.normal = glm::normalize(v.normal);
+        v.normalize();
     }
     
 }

@@ -113,7 +113,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 
 	lightIntensity += ambientIntensity;
 
-	glm::vec3 finalColour = albedo * lightIntensity + specularIntensity;
+	glm::vec3 finalColour = lightIntensity * albedo + specularIntensity;
 	return finalColour;
 }
 
@@ -152,7 +152,15 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	ModelVertex &v1 = model.verts->at(tri.vertices[1]);
 	ModelVertex &v2 = model.verts->at(tri.vertices[2]);
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
-
+	glm::vec3 binormal = glm::normalize(v0.binormal * w + v1.binormal * u + v2.binormal * v);
+	glm::vec3 tangent = glm::normalize(v0.tangent * w + v1.tangent * u + v2.tangent * v);
+	Material* material = model.material;
+	glm::vec2 t0 = v0.texcoord;
+	glm::vec2 t1 = v1.texcoord;
+	glm::vec2 t2 = v2.texcoord;
+	glm::vec2 texcoord = t0 * w + t1 * u + t2 * v;
+	material->transformNormal(normal, binormal, tangent, texcoord.x, texcoord.y);
+	
 	if (currentDepth < MaxRayDepth)
 	{
 		if (model.material->mirror)
@@ -163,7 +171,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		else if (model.material->refract)
 		{
 			bool exiting = glm::dot(rayDir, normal) > 0;
-			glm::vec3 refractDir = glm::refract(rayDir, exiting ? -normal : normal, exiting ? 1 / model.material->refractiveIndex : model.material->refractiveIndex);
+			glm::vec3 refractDir = glm::refract(rayDir, exiting ? -normal : normal, exiting ? 1 / material->refractiveIndex : material->refractiveIndex);
 			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1);
 		}
 	}
