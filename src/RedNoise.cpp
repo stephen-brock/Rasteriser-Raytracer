@@ -285,6 +285,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
+		window.renderFrame();
 	}
 }
 

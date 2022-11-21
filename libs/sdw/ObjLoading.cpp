@@ -84,21 +84,26 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 			getline(file, line);
 			glm::vec3 colour = colourToVector(getColourFromString(line));
 			bool mirror = false;
+			bool refract = false;
 			getline(file, line);
 			if (line[0] == 'm')
 			{
 				mirror = true;
 				getline(file, line);
 			}
-
+			else if (line[0] == 'r')
+			{
+				refract = true;
+				getline(file, line);
+			}
 			if (line[0] == 't')
 			{
 				std::string texpath = stringRange(line, 4, line.length());
-				materials[name] = new TexturedMaterial(colour, mirror, texpath);
+				materials[name] = new TexturedMaterial(colour, mirror, refract, texpath);
 			}
 			else 
 			{
-				materials[name] = new Material(colour, mirror);
+				materials[name] = new Material(colour, mirror, refract);
 			}
 		}
 	}

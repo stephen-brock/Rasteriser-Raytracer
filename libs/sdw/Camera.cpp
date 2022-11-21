@@ -153,10 +153,19 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	ModelVertex &v2 = model.verts->at(tri.vertices[2]);
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
 
-	if (model.material->mirror && currentDepth < MaxRayDepth)
+	if (currentDepth < MaxRayDepth)
 	{
-		glm::vec3 reflectDir = glm::reflect(rayDir, normal);
-		return renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1);
+		if (model.material->mirror)
+		{
+			glm::vec3 reflectDir = glm::reflect(rayDir, normal);
+			return renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1);
+		}
+		else if (model.material->refract)
+		{
+			bool exiting = glm::dot(rayDir, normal) > 0;
+			glm::vec3 refractDir = glm::refract(rayDir, exiting ? -normal : normal, exiting ? 1 / 1.45f : 1.45f);
+			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1);
+		}
 	}
 
  	glm::vec3 albedo = getAlbedo(model, tri, intersection);
