@@ -10,7 +10,8 @@ class TexturedMaterial : public Material
         TextureMap *textureMap;
         glm::vec3 sampleAlbedo(float u, float v);
         TexturedMaterial();
-        TexturedMaterial(glm::vec3 colour, bool mirror, bool refract, std::string &texpath);
+        TexturedMaterial(glm::vec3 colour, bool mirror, std::string &texpath);
+        TexturedMaterial(glm::vec3 colour, bool refract, float refractiveIndex, std::string &texpath);
         ~TexturedMaterial();
         
     private:

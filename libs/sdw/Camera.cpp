@@ -163,7 +163,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		else if (model.material->refract)
 		{
 			bool exiting = glm::dot(rayDir, normal) > 0;
-			glm::vec3 refractDir = glm::refract(rayDir, exiting ? -normal : normal, exiting ? 1 / 1.45f : 1.45f);
+			glm::vec3 refractDir = glm::refract(rayDir, exiting ? -normal : normal, exiting ? 1 / model.material->refractiveIndex : model.material->refractiveIndex);
 			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1);
 		}
 	}
