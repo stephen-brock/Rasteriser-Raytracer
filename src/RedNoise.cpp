@@ -27,6 +27,10 @@ int renderMode = 1;
 
 uint32_t colourToInt(Colour colour) 
 {
+	if (colour.red < 0 || colour.green < 0 || colour.blue < 0)
+	{
+		std::cout << colour << std::endl;
+	}
 	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
 }
 
@@ -347,10 +351,12 @@ int main(int argc, char *argv[]) {
 
 	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
-	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
+	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
+	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(1.5f, 3.0f, 3), glm::vec3(400,400,400)));
-	//createSoftLight(lights, glm::vec3(0, 0.7f, 0), glm::vec3(500,500,500), 3, 3, 0.3f, 2);
+	//lights.push_back(Light(glm::vec3(1.5f, 3.0f, 3), glm::vec3(400,400,400)));
+	// lights.push_back(Light(glm::vec3(-.3f, 0, 0.25f), glm::vec3(500,500,500)));
+	createSoftLight(lights, glm::vec3(-.25f, 0, 0.15f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
@@ -375,8 +381,9 @@ int main(int argc, char *argv[]) {
 		{
 			angle += 0.01;
 		}
-		glm::vec3 orbit = glm::vec3(1.5,1.5,0);
-		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 3, 1,cos(angle) * 3), glm::vec3(0,0,M_PI));
+		glm::vec3 orbit = glm::vec3(0,0,0);
+		// glm::vec3 orbit = glm::vec3(1.5,1.5,0);
+		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.0f, -.25,cos(angle) * 2.0f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
 		if (renderMode == 0)

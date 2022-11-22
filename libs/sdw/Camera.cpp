@@ -106,7 +106,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 			lightIntensity += lightCol * ldn;
 			glm::vec3 refl = glm::reflect(rayDir, normal);
 			float rdl = glm::dot(lightDir, refl);
-			rdl = rdl < 0 ? 0 : rdl;
+			rdl = rdl <= 0 ? 0 : rdl;
 			specularIntensity += lightCol * powf(rdl, 128);
 		}
 	}
@@ -140,6 +140,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
 	glm::vec3 binormal = glm::normalize(v0.binormal * w + v1.binormal * u + v2.binormal * v);
 	glm::vec3 tangent = glm::normalize(v0.tangent * w + v1.tangent * u + v2.tangent * v);
+
 	glm::vec2 t0 = v0.texcoord;
 	glm::vec2 t1 = v1.texcoord;
 	glm::vec2 t2 = v2.texcoord;
@@ -221,9 +222,10 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 
 void tonemapping(glm::vec3 &colour)
 {
-	colour.x = powf(colour.x, 0.4545) * 0.15f;
-	colour.y = powf(colour.y, 0.4545) * 0.15f;
-	colour.z = powf(colour.z, 0.4545) * 0.15f;
+	colour.x = powf(fmax(0, colour.x), 0.4545);
+	colour.y = powf(fmax(0, colour.y), 0.4545);
+	colour.z = powf(fmax(0, colour.z), 0.4545);
+	colour *= 0.2f;
 }
 
 Colour Camera::renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights)

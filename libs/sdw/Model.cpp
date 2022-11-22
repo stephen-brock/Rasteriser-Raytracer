@@ -20,8 +20,8 @@ void Model::AddTriangle(int v0, int v1, int v2)
 	ModelVertex &x = verts->at(v0);
 	ModelVertex &y = verts->at(v1);
 	ModelVertex &z = verts->at(v2);
-    glm::vec3 binormal = y.pos - x.pos;
-    glm::vec3 tangent = z.pos - x.pos;
+    glm::vec3 binormal = glm::normalize(y.pos - x.pos);
+    glm::vec3 tangent = glm::normalize(z.pos - x.pos + glm::vec3(0,0.00001f,0));
 	glm::vec3 normal = glm::normalize(glm::cross(binormal, tangent));
 	x.addNormal(normal, binormal, tangent);
 	y.addNormal(normal, binormal, tangent);
@@ -36,7 +36,6 @@ void Model::NormaliseNormals()
         ModelVertex& v = (verts->at(i));
         v.normalize();
     }
-    
 }
 
 Model::~Model()
