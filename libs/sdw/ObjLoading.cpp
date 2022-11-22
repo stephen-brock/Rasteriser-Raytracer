@@ -44,7 +44,16 @@ glm::vec3 vertFromString(std::string s, float scale)
 	return glm::vec3(x, y, z) * scale;
 }
 
-void triFromString(Model &model, std::string s, int fromCount)
+glm::vec2 texcoordFromString(std::string s)
+{
+	int xTo = getSubStringIndex(s, ' ', 3);
+	float x = std::stof(stringRange(s, 2, xTo));
+	float y = std::stof(stringRange(s, xTo + 1, s.length()));
+
+	return glm::vec2(x, y);
+}
+
+void triFromStringOld(Model &model, std::string s, int fromCount)
 {
 	int xTo = getSubStringIndex(s, ' ', 2);
 	int x = std::stoi(stringRange(s, 2, xTo)) - 1;
@@ -53,6 +62,28 @@ void triFromString(Model &model, std::string s, int fromCount)
 	int z = std::stoi(stringRange(s, yTo + 1, s.length())) - 1;
 
 	model.AddTriangle(x - fromCount, y - fromCount, z - fromCount);
+}
+
+void triFromString(Model &model, std::vector<glm::vec2> &texcoords, std::string s, int fromCount)
+{
+	int xTo = getSubStringIndex(s, '/', 2);
+	int x = std::stoi(stringRange(s, 2, xTo)) - 1;
+	int tXTo = getSubStringIndex(s, ' ', xTo);
+	int tX = std::stoi(stringRange(s, xTo + 1, tXTo)) - 1;
+
+	int yTo = getSubStringIndex(s, '/', tXTo);
+	int y= std::stoi(stringRange(s, tXTo + 1, yTo)) - 1;
+	int tYTo = getSubStringIndex(s, ' ', yTo);
+	int tY = std::stoi(stringRange(s, yTo + 1, tYTo)) - 1;
+
+	int zTo = getSubStringIndex(s, '/', tYTo);
+	int z = std::stoi(stringRange(s, tYTo + 1, zTo)) - 1;
+	int tZ = std::stoi(stringRange(s, zTo + 1, s.length())) - 1;
+
+	model.AddTriangle(x - fromCount, y - fromCount, z - fromCount);
+	model.verts->at(x - fromCount).texcoord = texcoords[tX];
+	model.verts->at(y - fromCount).texcoord = texcoords[tY];
+	model.verts->at(z - fromCount).texcoord = texcoords[tZ];
 }
 
 std::string getMatNameFromString(std::string s)
@@ -130,7 +161,7 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 	}
 }
 
-void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale) 
+void loadObjOld(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale) 
 {
 	std::string line;
 	std::ifstream file(path);
@@ -153,7 +184,50 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 				}
 				else if (line[0] == 'f')
 				{	
-					triFromString(*model, line, fromCount);
+					triFromStringOld(*model, line, fromCount);
+				}
+			}
+			fromCount += model->verts->size();
+			model->NormaliseNormals();
+			models.push_back(model);
+		}
+	}
+
+	file.close();
+}
+
+void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale) 
+{
+	std::string line;
+	std::ifstream file(path);
+	std::vector<glm::vec2> texcoords = std::vector<glm::vec2>();
+	int fromCount = 0;
+	while (getline(file, line))
+	{
+		if (line[0] == 'o') 
+		{
+			getline(file, line);
+			std::string mat = getMatNameFromString(line);
+			Model* model = new Model(materials[mat]);
+			while (getline(file, line) && line[0] != 'o') 
+			{
+				if (line[0] == 'v')
+				{
+					if (line[1] == ' ')
+					{
+						glm::vec3 pos = vertFromString(line, scale);
+						ModelVertex mv = ModelVertex(pos);
+						model->verts->push_back(mv);
+					}
+					else if (line[1] == 't')
+					{
+						glm::vec2 pos = texcoordFromString(line);
+						texcoords.push_back(pos);
+					}
+				}
+				else if (line[0] == 'f')
+				{	
+					triFromString(*model, texcoords, line, fromCount);
 				}
 			}
 			fromCount += model->verts->size();

@@ -15,8 +15,10 @@ int getSubStringIndex(std::string s, char delimiter, int startIndex);
 
 std::string stringRange(std::string s, int from, int to);
 
+glm::vec2 texcoordFromString(std::string s);
 glm::vec3 vertFromString(std::string s, float scale);
 
+void triFromStringOld(Model &model, std::string s, int fromCount);
 void triFromString(Model &model, std::string s, int fromCount);
 
 std::string getMatNameFromString(std::string s);
@@ -25,4 +27,5 @@ Colour getColourFromString(std::string s);
 
 void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string path);
 
+void loadObjOld(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale);
 void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale);
