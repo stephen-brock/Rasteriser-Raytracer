@@ -11,7 +11,7 @@ struct Node
     Node();
     Node(glm::vec3 &location, glm::vec3 &colour);
     ~Node();
-    glm::vec3 Search(glm::vec3 &location, float closestDistance, int depth=0);
+    glm::vec3 Search(glm::vec3 &location, float& closestDistance, int depth=0);
     void Insert(glm::vec3 &location, glm::vec3 &colour, int depth=0);
 };
 

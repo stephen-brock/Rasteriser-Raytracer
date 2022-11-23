@@ -8,22 +8,46 @@ Node::Node(glm::vec3 &location, glm::vec3 &colour)
     this->colour = colour;
 }
 
-glm::vec3 Node::Search(glm::vec3 &location, float closestDistance, int depth)
+glm::vec3 Node::Search(glm::vec3 &location, float &closestDistance, int depth)
 {
-    int axis = fmod(depth, 3);
+    int axis = depth % 3;
     Node* nextNode = location[axis] > this->location[axis] ? rightChild : leftChild;
-    if (nextNode == nullptr)
+    glm::vec3 dir = this->location - location;
+    glm::vec3 col = colour;
+    closestDistance = glm::dot(dir, dir);
+    
+    if (nextNode != nullptr)
     {
-        return colour;
+        float childDistance = -1;
+        glm::vec3 childCol = nextNode->Search(location, childDistance, depth + 1);
+
+        if (childDistance < closestDistance)
+        {
+            closestDistance = childDistance;
+            col = childCol;
+        }
     }
 
-    float nextDst = glm::distance(location, this->location);
-    if (nextDst > closestDistance)
+    Node* otherNode = location[axis] > this->location[axis] ? leftChild : rightChild;
+    if (otherNode != nullptr)
     {
-        return colour;
+        glm::vec3 otherDir = this->location - otherNode->location;
+        float otherDst = glm::dot(otherDir, otherDir);
+        //does hypersphere cross the hyperplane
+        if (otherDir[axis] * otherDir[axis] <= otherDst)
+        {
+            float childDistance = -1;
+            glm::vec3 childCol = otherNode->Search(location, childDistance, depth + 1);
+
+            if (childDistance < closestDistance)
+            {
+                closestDistance = childDistance;
+                col = childCol;
+            }
+        }
     }
 
-    return nextNode->Search(location, nextDst, depth + 1);
+    return col;
 }
 
 Node::~Node()
@@ -34,7 +58,7 @@ Node::~Node()
 
 void Node::Insert(glm::vec3 &location, glm::vec3 &colour, int depth)
 {
-    int axis = fmod(depth, 3);
+    int axis = depth % 3;
     int value = location[axis];
     int thisValue = location[axis];
     // std::cout << depth << std::endl;
@@ -74,7 +98,8 @@ KdTree::KdTree(std::vector<glm::vec3> &location, std::vector<glm::vec3> &data)
 }
 glm::vec3 KdTree::Search(glm::vec3 &location)
 {
-    return root->Search(location, 1000000);
+    float distance = 0;
+    return root->Search(location, distance);
 }
 
 KdTree::~KdTree()
