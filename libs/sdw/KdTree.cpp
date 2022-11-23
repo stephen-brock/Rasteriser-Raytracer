@@ -96,10 +96,9 @@ KdTree::KdTree(std::vector<glm::vec3> &location, std::vector<glm::vec3> &data)
         root->Insert(location[i], data[i]);
     }
 }
-glm::vec3 KdTree::Search(glm::vec3 &location)
+glm::vec3 KdTree::Search(glm::vec3 &location, float &sqrDistance)
 {
-    float distance = 0;
-    return root->Search(location, distance);
+    return root->Search(location, sqrDistance);
 }
 
 KdTree::~KdTree()

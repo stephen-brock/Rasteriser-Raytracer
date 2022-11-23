@@ -290,8 +290,8 @@ Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std:
 	{
 		return vectorToColour(environment->sampleEnvironment(rayDir));
 	}
-
-	glm::vec3 colour = photonMap->Search(intersection.intersectionPoint);
+	float sqrDistance = 0;
+	glm::vec3 colour = photonMap->Search(intersection.intersectionPoint, sqrDistance);
 	tonemapping(colour);
 	return vectorToColour(colour);
 }

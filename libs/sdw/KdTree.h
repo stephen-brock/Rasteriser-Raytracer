@@ -20,7 +20,7 @@ class KdTree
     public:
         KdTree();
         KdTree(std::vector<glm::vec3> &location, std::vector<glm::vec3> &data);
-        glm::vec3 Search(glm::vec3 &location);
+        glm::vec3 Search(glm::vec3 &location, float &sqrDistance);
         ~KdTree();
     private:
         Node* root{};
