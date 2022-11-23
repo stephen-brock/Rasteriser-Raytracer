@@ -7,6 +7,7 @@
 #include "ModelVertex.h"
 #include "Model.h"
 #include "Environment.h"
+#include "KdTree.h"
 
 class Camera {
     public:
@@ -17,8 +18,10 @@ class Camera {
         glm::vec3 getRayDirection(float x, float y);
         void updateTransform();
         Colour renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights);
+        Colour renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap);
         Colour renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         void initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
+        KdTree* renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, int bounces);
         Camera();
         Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height, Environment* environment);
     private:

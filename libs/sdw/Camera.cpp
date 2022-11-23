@@ -99,7 +99,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 		glm::vec3 lightDir = lights[i].position - intersection.intersectionPoint; 
 		if (!Camera::inShadow(intersection, models, lightDir))
 		{
-			glm::vec3 lightCol = lights[i].colour / (4.0f * (float)M_PI * glm::dot(lightDir, lightDir));
+			glm::vec3 lightCol = lights[i].colour * lights[i].lightAttenuation(lightDir);
 			lightDir = glm::normalize(lightDir);
 			float ldn = glm::dot(lightDir, normal);
 			ldn = ldn < 0 ? 0 : ldn;
@@ -220,6 +220,57 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 	return vectorToColour(v0 * w + v1 * u + v2 * v); 
 }
 
+
+
+KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, int bounces)
+{
+	std::vector<glm::vec3> positions = std::vector<glm::vec3>();
+	std::vector<glm::vec3> intensities = std::vector<glm::vec3>();
+
+	for (int i = 0; i < iterations; i++)
+	{
+		Light &light = lights[(int)fmod(i, lights.size())];
+		glm::vec3 dir = glm::normalize(glm::vec3((float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f));
+		// std::cout << dir.x << " " << dir.y << " " << dir.z << std::endl;
+		RayTriangleIntersection intersection = getClosestIntersection(light.position, dir, models);
+		glm::vec3 origin = light.position;
+		glm::vec3 lightIntensity = light.colour;
+		for (int b = 0; b < bounces; b++)
+		{
+			if (intersection.modelIndex == -1)
+			{
+				break;
+			}
+			Model &model = *models[intersection.modelIndex];
+
+			float u = intersection.u;
+			float v = intersection.v;
+			float w = 1 - u - v;
+
+			ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
+			ModelVertex &v0 = model.verts->at(tri.vertices[0]);
+			ModelVertex &v1 = model.verts->at(tri.vertices[1]);
+			ModelVertex &v2 = model.verts->at(tri.vertices[2]);
+			glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
+
+			glm::vec3 lightDir = intersection.intersectionPoint - origin; 
+			lightIntensity *= light.lightAttenuation(lightDir);
+			positions.push_back(intersection.intersectionPoint);
+			intensities.push_back(lightIntensity);
+
+			lightDir = glm::reflect(lightDir, normal);
+			origin = intersection.intersectionPoint;
+			intersection = getClosestIntersection(intersection.intersectionPoint, lightDir, models);
+		}
+	}
+
+	std::cout << intensities.size() << std::endl;
+
+	KdTree* photonMap = new KdTree(positions, intensities);
+	return photonMap;
+	
+}
+
 void tonemapping(glm::vec3 &colour)
 {
 	colour.x = powf(fmax(0, colour.x), 0.4545);
@@ -228,12 +279,28 @@ void tonemapping(glm::vec3 &colour)
 	colour *= 0.2f;
 }
 
+Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap)
+{
+	glm::vec3 rayDir = getRayDirection(x, y);
+	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
+	
+	RayTriangleIntersection intersection = Camera::getClosestIntersection(cameraPos, rayDir, models);
+
+	if (intersection.triangleIndex == -1)
+	{
+		return vectorToColour(environment->sampleEnvironment(rayDir));
+	}
+
+	glm::vec3 colour = photonMap->Search(intersection.intersectionPoint);
+	tonemapping(colour);
+	return vectorToColour(colour);
+}
+
 Colour Camera::renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
 	glm::vec3 colour = renderRay(cameraPos, rayDir, models, lights);
-	tonemapping(colour);
 	return vectorToColour(colour);
 }
 

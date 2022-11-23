@@ -10,4 +10,5 @@ class Light
         glm::vec3 colour;
         Light();
         Light(glm::vec3 position, glm::vec3 colour);
+        float lightAttenuation(glm::vec3 lightDir);
 };

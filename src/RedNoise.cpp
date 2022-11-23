@@ -280,17 +280,21 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 	window.clearPixels();
 
 	camera.updateTransform();
-	
+
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 1000, 10);
+
 	for (int i = 0; i < window.width; i++)
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTraced(i, j, models, lights);
+			Colour col = camera.renderTracedBaked(i, j, models, lights, photon_map);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
 		window.renderFrame();
 	}
+
+	delete photon_map;
 }
 
 void traceDrawGouraud(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights)
@@ -356,7 +360,7 @@ int main(int argc, char *argv[]) {
 	std::vector<Light> lights = std::vector<Light>();
 	//lights.push_back(Light(glm::vec3(1.5f, 3.0f, 3), glm::vec3(400,400,400)));
 	// lights.push_back(Light(glm::vec3(-.3f, 0, 0.25f), glm::vec3(500,500,500)));
-	createSoftLight(lights, glm::vec3(-.25f, 0, 0.15f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
+	createSoftLight(lights, glm::vec3(0, 0.75f, 0), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);

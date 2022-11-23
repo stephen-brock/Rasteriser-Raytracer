@@ -14,3 +14,8 @@ Light::Light(glm::vec3 position, glm::vec3 colour)
     this->colour = colour;
     this->position = position;
 }
+
+float Light::lightAttenuation(glm::vec3 lightDir)
+{
+	return 1 / fmax(1, (4.0f * (float)M_PI * glm::dot(lightDir, lightDir)));
+}
