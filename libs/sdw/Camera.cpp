@@ -224,6 +224,7 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 
 KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, int bounces)
 {
+	std::cout << "K Neighbours " << K_NEIGHBOURS << std::endl; 
 	std::vector<glm::vec3>* positions = new std::vector<glm::vec3>();
 	std::vector<glm::vec3>* intensities = new std::vector<glm::vec3>();
 
@@ -234,7 +235,7 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 		// std::cout << dir.x << " " << dir.y << " " << dir.z << std::endl;
 		RayTriangleIntersection intersection = getClosestIntersection(light.position, dir, models);
 		glm::vec3 origin = light.position;
-		glm::vec3 lightIntensity = light.colour / 2.0f;
+		glm::vec3 lightIntensity = light.colour;
 		for (int b = 0; b < bounces; b++)
 		{
 			if (intersection.modelIndex == -1)
@@ -265,8 +266,7 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 
 			glm::vec3 lightDir = intersection.intersectionPoint - origin; 
 			positions->push_back(intersection.intersectionPoint);
-			lightIntensity *= material->sampleAlbedo(texcoord.x, texcoord.y) * 2.0f * light.lightAttenuation(lightDir);
-			// lightIntensity *= light.lightAttenuation(lightDir) * material->sampleAlbedo(texcoord.x, texcoord.y);
+			lightIntensity *= material->sampleAlbedo(texcoord.x, texcoord.y);
 			intensities->push_back(lightIntensity);
 
 			lightDir = glm::reflect(lightDir, normal);
@@ -289,7 +289,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.5f;
+	colour *= 0.01f;
 }
 
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap)
@@ -303,8 +303,18 @@ Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std:
 	{
 		return vectorToColour(environment->sampleEnvironment(rayDir));
 	}
-	float sqrDistance = 0;
-	glm::vec3 colour = photonMap->Search(intersection.intersectionPoint, sqrDistance);
+	std::array<float, K_NEIGHBOURS> sqrDistances;
+	// float sqrDistance;
+	// glm::vec3 colour = photonMap->Search(intersection.intersectionPoint, sqrDistance);
+	std::array<glm::vec3, K_NEIGHBOURS> colours = photonMap->SearchKNeighbours(intersection.intersectionPoint, sqrDistances);
+	float areaOfSphere = sqrDistances[K_NEIGHBOURS - 1] * 4 * M_PI;
+	
+	glm::vec3 colour = glm::vec3(0,0,0);
+	for (int i = 0; i < colours.size(); i++)
+	{
+		colour += colours[i] / areaOfSphere;
+	}
+	
 	tonemapping(colour);
 	return vectorToColour(colour);
 }

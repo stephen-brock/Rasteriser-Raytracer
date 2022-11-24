@@ -49,7 +49,7 @@ glm::vec3 Node::Search(glm::vec3 &location, float &closestDistance, int depth)
     return col;
 }
 
-void Node::SearchKNeighbours(glm::vec3 &location, std::vector<glm::vec3> &colours, std::vector<float> &sqrDistances, int depth)
+void Node::SearchKNeighbours(glm::vec3 &location, std::array<glm::vec3, K_NEIGHBOURS> &colours, std::array<float, K_NEIGHBOURS> &sqrDistances, int depth)
 {
     int axis = depth % 3;
     Node* nextNode = location[axis] > this->location[axis] ? rightChild : leftChild;
@@ -60,41 +60,64 @@ void Node::SearchKNeighbours(glm::vec3 &location, std::vector<glm::vec3> &colour
     
     if (nextNode != nullptr)
     {
-        nextNode->SearchKNeighbours(location, colours, sqrDistances, depth + 1);
+        std::array<glm::vec3, K_NEIGHBOURS> nextCols;
+        std::array<float, K_NEIGHBOURS> nextDsts;
+        for (int i = 0; i < K_NEIGHBOURS; i++)
+        {
+            nextDsts[i] = 10000000;
+        }
+        nextNode->SearchKNeighbours(location, nextCols, nextDsts, depth + 1);
+        for (int i = 0; i < K_NEIGHBOURS; i++)
+        {
+            setMinimumDistance(colours, sqrDistances, nextCols[i], nextDsts[i]);
+        }
+        
     }
 
     Node* otherNode = location[axis] > this->location[axis] ? leftChild : rightChild;
     if (otherNode != nullptr)
     {
-        glm::vec3 otherDir = this->location - otherNode->location;
-        float otherDst = glm::dot(otherDir, otherDir);
-        //does hypersphere cross the hyperplane
-        if (otherDir[axis] * otherDir[axis] <= sqrDistances[sqrDistances.size() - 1])
+        glm::vec3 otherDir = location - this->location;
+        // does hypersphere cross the hyperplane
+        if (otherDir[axis] * otherDir[axis] <= sqrDistances[K_NEIGHBOURS - 1])
         {
-            otherNode->SearchKNeighbours(location, colours, sqrDistances, depth + 1);
+            std::array<glm::vec3, K_NEIGHBOURS> nextCols;
+            std::array<float, K_NEIGHBOURS> nextDsts;
+            for (int i = 0; i < K_NEIGHBOURS; i++)
+            {
+                nextDsts[i] = 10000000;
+            }
+            otherNode->SearchKNeighbours(location, nextCols, nextDsts, depth + 1);
+            for (int i = 0; i < K_NEIGHBOURS; i++)
+            {
+                setMinimumDistance(colours, sqrDistances, nextCols[i], nextDsts[i]);
+            }
         }
     }
 }
 
-void setMinimumDistance(std::vector<glm::vec3> &colours, std::vector<float> &sqrDistances, glm::vec3 col, float sqrDst)
+void Node::setMinimumDistance(std::array<glm::vec3, K_NEIGHBOURS> &colours, std::array<float, K_NEIGHBOURS> &sqrDistances, glm::vec3 col, float sqrDst)
 {
-    bool replaced = false;
-    for (int i = 0; i < sqrDistances.size() && !replaced; i++)
+    int replacedIndex = -1;
+    for (int i = 0; i < K_NEIGHBOURS && replacedIndex == -1; i++)
     {
         if (sqrDst < sqrDistances[i])
         {
-            replaced = true;
-            colours.insert(colours.begin() + i, col);
-            sqrDistances.insert(sqrDistances.begin() + i, sqrDst);
+            replacedIndex = i;
         }
     }
 
-    if (replaced)
+    if (replacedIndex != -1)
     {
-        colours.pop_back();
-        sqrDistances.pop_back();
+        for (int i = K_NEIGHBOURS - 1; i > replacedIndex; i--)
+        {
+            std::swap(colours[i], colours[i - 1]);
+            std::swap(sqrDistances[i], sqrDistances[i - 1]);
+        }
+
+        colours[replacedIndex] = col;
+        sqrDistances[replacedIndex] = sqrDst;
     }
-    
 }
 
 Node::~Node()
@@ -138,6 +161,10 @@ KdTree::KdTree() = default;
 KdTree::KdTree(std::vector<glm::vec3> &location, std::vector<glm::vec3> &data)
 {
     root = new Node(location[0], data[0]);
+    std::vector<float> test = std::vector<float>();
+    test.push_back(1);
+    test.push_back(2);
+    test.push_back(4);
     for (int i = 1; i < data.size(); i++)
     {
         root->Insert(location[i], data[i]);
@@ -148,16 +175,15 @@ glm::vec3 KdTree::Search(glm::vec3 &location, float &sqrDistance)
     return root->Search(location, sqrDistance);
 }
 
-std::vector<glm::vec3> KdTree::SearchKNeighbours(glm::vec3 &location, std::vector<float> &sqrDistances, int k)
+std::array<glm::vec3, K_NEIGHBOURS> KdTree::SearchKNeighbours(glm::vec3 &location, std::array<float, K_NEIGHBOURS> &sqrDistances)
 {
-    std::vector<glm::vec3> colours = std::vector<glm::vec3>();
-    for (int i = 0; i < k; i++)
+    std::array<glm::vec3, K_NEIGHBOURS> colours = std::array<glm::vec3, K_NEIGHBOURS>();
+    for (int i = 0; i < K_NEIGHBOURS; i++)
     {
-        colours.push_back(glm::vec3(0,0,0));
-        sqrDistances.push_back(1000000);
+        sqrDistances[i] = 10000000;
     }
     
-    root->SearchKNeighbours(location, colours, sqrDistances, k);
+    root->SearchKNeighbours(location, colours, sqrDistances);
     return colours;
 }
 
