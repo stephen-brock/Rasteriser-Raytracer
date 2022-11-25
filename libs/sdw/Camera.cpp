@@ -7,7 +7,7 @@
 #include "Light.h"
 #include <iostream>
 
-const int MaxRayDepth = 4;
+const int MaxRayDepth = 10;
 
 Camera::Camera()
 {
@@ -116,6 +116,13 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 	return finalColour;
 }
 
+glm::vec3 Camera::refract(glm::vec3 &rayDir, glm::vec3 &normal, float ior)
+{
+	bool exiting = glm::dot(rayDir, normal) > 0;
+	glm::vec3 refractDir = glm::refract(rayDir, exiting ? normal : -normal, ior);
+	return refractDir;
+}
+
 glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights, int currentDepth)
 {
 	RayTriangleIntersection intersection = Camera::getClosestIntersection(origin, rayDir, models);
@@ -156,8 +163,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		}
 		else if (model.material->refract)
 		{
-			bool exiting = glm::dot(rayDir, normal) > 0;
-			glm::vec3 refractDir = glm::refract(rayDir, exiting ? -normal : normal, exiting ? 1 / material->refractiveIndex : material->refractiveIndex);
+			glm::vec3 refractDir = refract(rayDir, normal, material->refractiveIndex);
 			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1);
 		}
 	}
@@ -265,12 +271,20 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 			material->transformNormal(normal, binormal, tangent, texcoord.x, texcoord.y);
 
 			glm::vec3 lightDir = intersection.intersectionPoint - origin; 
-			positions->push_back(intersection.intersectionPoint);
-			lightIntensity *= material->sampleAlbedo(texcoord.x, texcoord.y);
-			intensities->push_back(lightIntensity);
 
-			lightDir = glm::reflect(lightDir, normal);
 			origin = intersection.intersectionPoint;
+			if (material->refract)
+			{
+				lightDir = refract(lightDir, normal, material->refractiveIndex);
+			}
+			else 
+			{
+				positions->push_back(intersection.intersectionPoint);
+				intensities->push_back(lightIntensity);
+				lightIntensity *= material->sampleAlbedo(texcoord.x, texcoord.y) * (float)fmax(0, glm::dot(-lightDir, normal));
+				lightDir = glm::reflect(lightDir, normal);
+			}
+			
 			intersection = getClosestIntersection(intersection.intersectionPoint, lightDir, models);
 		}
 	}
@@ -289,32 +303,80 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.01f;
+	colour *= 0.125f;
+}
+
+glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap, int currentDepth)
+{
+	RayTriangleIntersection intersection = Camera::getClosestIntersection(origin, rayDir, models);
+
+	if (intersection.triangleIndex == -1)
+	{
+		return environment->sampleEnvironment(rayDir);
+	}
+
+	Model &model = *models[intersection.modelIndex];
+	Material* material = model.material;
+
+	if (currentDepth <= MaxRayDepth)
+	{
+		if (material->refract || material->mirror)
+		{
+			float u = intersection.u;
+			float v = intersection.v;
+			float w = 1 - u - v;
+
+			ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
+			ModelVertex &v0 = model.verts->at(tri.vertices[0]);
+			ModelVertex &v1 = model.verts->at(tri.vertices[1]);
+			ModelVertex &v2 = model.verts->at(tri.vertices[2]);
+			
+			glm::vec3 normal = glm::normalize(v0.normal * w + v1.normal * u + v2.normal * v);
+			glm::vec3 binormal = glm::normalize(v0.binormal * w + v1.binormal * u + v2.binormal * v);
+			glm::vec3 tangent = glm::normalize(v0.tangent * w + v1.tangent * u + v2.tangent * v);
+
+			glm::vec2 t0 = v0.texcoord;
+			glm::vec2 t1 = v1.texcoord;
+			glm::vec2 t2 = v2.texcoord;
+			glm::vec2 texcoord = t0 * w + t1 * u + t2 * v;
+			material->transformNormal(normal, binormal, tangent, texcoord.x, texcoord.y);
+
+			if (material->refract)
+			{
+				glm::vec3 refractDir = refract(rayDir, normal, material->refractiveIndex);
+				return renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1);
+			}
+			else 
+			{
+				glm::vec3 reflectDir = glm::reflect(rayDir, normal);
+				return renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1);
+			}
+		}
+	}
+	
+
+	std::array<float, K_NEIGHBOURS> sqrDistances;
+	// float sqrDistance;
+	// glm::vec3 colour = photonMap->Search(intersection.intersectionPoint, sqrDistance);
+	std::array<glm::vec3, K_NEIGHBOURS> colours = photonMap->SearchKNeighbours(intersection.intersectionPoint, sqrDistances);
+	
+	glm::vec3 colour = glm::vec3(0,0,0);
+	for (int i = 0; i < colours.size(); i++)
+	{
+		colour += colours[i];
+	}
+
+	float areaOfSphere = sqrDistances[K_NEIGHBOURS - 1] * 4 * M_PI;
+
+	colour /= areaOfSphere;
+	return colour;
 }
 
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap)
 {
 	glm::vec3 rayDir = getRayDirection(x, y);
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
-	
-	RayTriangleIntersection intersection = Camera::getClosestIntersection(cameraPos, rayDir, models);
-
-	if (intersection.triangleIndex == -1)
-	{
-		return vectorToColour(environment->sampleEnvironment(rayDir));
-	}
-	std::array<float, K_NEIGHBOURS> sqrDistances;
-	// float sqrDistance;
-	// glm::vec3 colour = photonMap->Search(intersection.intersectionPoint, sqrDistance);
-	std::array<glm::vec3, K_NEIGHBOURS> colours = photonMap->SearchKNeighbours(intersection.intersectionPoint, sqrDistances);
-	float areaOfSphere = sqrDistances[K_NEIGHBOURS - 1] * 4 * M_PI;
-	
-	glm::vec3 colour = glm::vec3(0,0,0);
-	for (int i = 0; i < colours.size(); i++)
-	{
-		colour += colours[i] / areaOfSphere;
-	}
-	
+	glm::vec3 colour = renderRayBaked(cameraPos, rayDir, models, lights, photonMap);
 	tonemapping(colour);
 	return vectorToColour(colour);
 }
@@ -324,6 +386,7 @@ Colour Camera::renderTraced(int x, int y, std::vector<Model*> &models, std::vect
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
 	glm::vec3 colour = renderRay(cameraPos, rayDir, models, lights);
+	tonemapping(colour);
 	return vectorToColour(colour);
 }
 

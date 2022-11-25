@@ -29,6 +29,8 @@ class Camera {
         static bool inShadow(RayTriangleIntersection &intersection, std::vector<Model*> &models, glm::vec3 &lightDir);
         glm::vec3 render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights);
         glm::vec3 renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights, int currentDepth=0);
+        glm::vec3 renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap, int currentDepth=0);
+        glm::vec3 refract(glm::vec3 &rayDir, glm::vec3 &normal, float ior);
         glm::mat4 worldToCamera;
         int width;
         int height;

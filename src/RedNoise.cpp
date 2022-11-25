@@ -281,20 +281,20 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 400, 4);
+	// KdTree* photon_map = camera.renderPhotonMap(models, lights, 5000, 5);
 
 	for (int i = 0; i < window.width; i++)
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTracedBaked(i, j, models, lights, photon_map);
+			Colour col = camera.renderTraced(i, j, models, lights);
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
 		window.renderFrame();
 	}
 
-	delete photon_map;
+	// delete photon_map;
 }
 
 void traceDrawGouraud(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights)
@@ -359,8 +359,7 @@ int main(int argc, char *argv[]) {
 	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
 	std::vector<Light> lights = std::vector<Light>();
 	//lights.push_back(Light(glm::vec3(1.5f, 3.0f, 3), glm::vec3(400,400,400)));
-	// lights.push_back(Light(glm::vec3(-.3f, 0, 0.25f), glm::vec3(500,500,500)));
-	createSoftLight(lights, glm::vec3(0, 0.75f, 0), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
+	createSoftLight(lights, glm::vec3(0.f, 0.8f, 0.0f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
@@ -387,7 +386,7 @@ int main(int argc, char *argv[]) {
 		}
 		glm::vec3 orbit = glm::vec3(0,0,0);
 		// glm::vec3 orbit = glm::vec3(1.5,1.5,0);
-		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.0f, -.25,cos(angle) * 2.0f), glm::vec3(0,0,M_PI));
+		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, 0.25f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
 		if (renderMode == 0)
