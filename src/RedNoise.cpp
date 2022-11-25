@@ -358,8 +358,8 @@ int main(int argc, char *argv[]) {
 	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
 	std::vector<Light> lights = std::vector<Light>();
-	//lights.push_back(Light(glm::vec3(1.5f, 3.0f, 3), glm::vec3(400,400,400)));
-	createSoftLight(lights, glm::vec3(0.f, 0.8f, 0.0f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
+	lights.push_back(Light(glm::vec3(0.0f, 0.8f, 0.0f), glm::vec3(400,400,400)));
+	// createSoftLight(lights, glm::vec3(0.f, 0.8f, 0.0f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
@@ -386,7 +386,7 @@ int main(int argc, char *argv[]) {
 		}
 		glm::vec3 orbit = glm::vec3(0,0,0);
 		// glm::vec3 orbit = glm::vec3(1.5,1.5,0);
-		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, 0.25f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
+		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, -0.3f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
 		if (renderMode == 0)
