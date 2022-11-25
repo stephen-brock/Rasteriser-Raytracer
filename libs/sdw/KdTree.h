@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <array>
-#define K_NEIGHBOURS 4
+#define K_NEIGHBOURS 12
 
 struct Node
 {
