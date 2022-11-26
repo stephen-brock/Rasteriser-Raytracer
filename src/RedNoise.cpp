@@ -281,7 +281,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 100, 0.3f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 40000, 0.3f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -358,8 +358,8 @@ int main(int argc, char *argv[]) {
 	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(-0.2f, 0.2f, 0.4f), glm::vec3(400,400,400)));
-	// createSoftLight(lights, glm::vec3(0.f, 0.8f, 0.0f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
+	// lights.push_back(Light(glm::vec3(1.0f, 2.0f, 1.5f), glm::vec3(4000,4000,4000)));
+	createSoftLight(lights, glm::vec3(0.f, 0.75f, 0.0f), glm::vec3(500,500,500), 3, 2, 0.1f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);

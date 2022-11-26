@@ -6,6 +6,7 @@ RayTriangleIntersection::RayTriangleIntersection(const glm::vec3 &point, float d
 		distanceFromCamera(distance),
 		triangleIndex(index), modelIndex(modelIndex) {}
 
+
 std::ostream &operator<<(std::ostream &os, const RayTriangleIntersection &intersection) {
 	os << "Intersection is at [" << intersection.intersectionPoint[0] << "," << intersection.intersectionPoint[1] << "," <<
 	   intersection.intersectionPoint[2] << "] on triangle " << intersection.triangleIndex <<
