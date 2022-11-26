@@ -266,11 +266,11 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model*> &models, st
 
 
 
-KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, float reflectProb)
+KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, float materialAbsorbProbability)
 {
 	std::cout << "K Neighbours " << K_NEIGHBOURS << std::endl; 
 	std::vector<glm::vec3>* positions = new std::vector<glm::vec3>();
-	std::vector<glm::vec3>* intensities = new std::vector<glm::vec3>();
+	std::vector<Photon>* intensities = new std::vector<Photon>();
 
 	for (int i = 0; i < iterations; i++)
 	{
@@ -279,17 +279,16 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 		RayTriangleIntersection intersection = RayTriangleIntersection();
 		glm::vec3 origin = light.position;
 		glm::vec3 lightIntensity = light.colour / (float)iterations;
-		glm::vec3 lastIntensity;
-		float probability = 1;
+		Photon photon;
+		float absorbProbability = 1;
 		int bounces = 0;
 		
-		while ((float)(rand()) / RAND_MAX <= probability || bounces <= 0)
+		while ((float)(rand()) / RAND_MAX >= absorbProbability || bounces <= 1)
 		{
 			intersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
 			if (intersection.modelIndex == -1)
 			{
 				bounces = 0;
-				lastIntensity = glm::vec3(0,0,0);
 				break;
 			}
 
@@ -330,14 +329,35 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 				{
 					lightDir = refract(lightDir, normal, material->refractiveIndex);
 				}
-				probability = 1;
+				absorbProbability = 0;
 			}
 			else 
 			{
-				probability = material->mirror ? 1 : reflectProb;
-				lastIntensity = lightIntensity;
-				lightIntensity *= material->sampleAlbedo(texcoord.x, texcoord.y);
-				lightDir = glm::reflect(lightDir, normal);
+				if (material->mirror)
+				{
+					absorbProbability = 0;
+					lightDir = glm::reflect(lightDir, normal);
+				}
+				else 
+				{
+					photon = Photon();
+					photon.intensity = lightIntensity;
+					lightDir = glm::normalize(lightDir);
+					photon.dir = lightDir;
+
+					float f = fresnel(lightDir, normal, 1.35);
+					if ((float)(rand()) / RAND_MAX <= f)
+					{
+						lightDir = glm::reflect(lightDir, normal);
+					}
+					else 
+					{
+						lightDir = glm::normalize(normal * ((float)(rand()) / RAND_MAX) + binormal * ((float)(rand()) / RAND_MAX - 0.5f) + tangent * ((float)(rand()) / RAND_MAX - 0.5f));
+						lightIntensity *= material->sampleAlbedo(texcoord.x, texcoord.y);
+					}
+
+					absorbProbability = materialAbsorbProbability;
+				}
 			}
 
 			dir = lightDir;
@@ -347,7 +367,7 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 		if (bounces > 0)
 		{
 			positions->push_back(intersection.intersectionPoint);
-			intensities->push_back(lastIntensity);
+			intensities->push_back(photon);
 		}
 		
 	}
@@ -417,19 +437,27 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	
 
 	std::array<float, K_NEIGHBOURS> sqrDistances;
-	std::array<glm::vec3, K_NEIGHBOURS> colours = photonMap->SearchKNeighbours(intersection.intersectionPoint, sqrDistances);
+	std::array<Photon, K_NEIGHBOURS> colours = photonMap->SearchKNeighbours(intersection.intersectionPoint, sqrDistances);
 	
 	float areaOfSphere = sqrDistances[K_NEIGHBOURS - 1] * M_PI;
+	float r = sqrtf(sqrDistances[K_NEIGHBOURS - 1]);
 	glm::vec3 colour = glm::vec3(0,0,0);
+	glm::vec3 specColour = glm::vec3(0,0,0);
 	for (int i = 0; i < colours.size(); i++)
 	{
-		colour += colours[i];
+		float dst = fmax(0, 1 - sqrtf(sqrDistances[i] / r));
+		float dot = glm::dot(-colours[i].dir, normal);
+		glm::vec3 refl = glm::reflect(rayDir, normal);
+		float rdl = glm::dot(-colours[i].dir, refl);
+		rdl = rdl <= 0 ? 0 : rdl;
+		colour += (colours[i].intensity * (float)fmax(0, dot) + colours[i].intensity * powf(rdl, 8)) * dst;
 	}
-	colour /= areaOfSphere;
+	colour /= areaOfSphere * 0.33f;
 
 	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
+	glm::vec3 direct = render(albedo, normal, intersection, rayDir, models, lights);
 
-	return render(albedo, normal, intersection, rayDir, models, lights) + colour * albedo;
+	return colour * albedo + specColour + direct;
 }
 
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap)
