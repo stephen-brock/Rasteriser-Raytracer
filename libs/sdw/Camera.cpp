@@ -285,12 +285,17 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 		
 		while ((float)(rand()) / RAND_MAX >= absorbProbability || bounces <= 1)
 		{
-			intersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
-			if (intersection.modelIndex == -1)
+			RayTriangleIntersection newIntersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
+			if (newIntersection.modelIndex == -1)
 			{
-				bounces = 0;
+				if (bounces <= 1)
+				{
+					bounces = 0;
+				}
 				break;
 			}
+
+			intersection = newIntersection;
 
 			Model &model = *models[intersection.modelIndex];
 			Material* material = model.material;

@@ -16,6 +16,7 @@
 #include <MatrixUtils.h>
 #include <ObjLoading.h>
 #include <Light.h>
+#include <future>
 
 #define WIDTH 400
 #define HEIGHT 300
@@ -274,14 +275,13 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 	}
 }
 
-
 void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights)
 {
 	window.clearPixels();
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 20000, 0.4f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 1000, 0.75f);
 
 	for (int i = 0; i < window.width; i++)
 	{
