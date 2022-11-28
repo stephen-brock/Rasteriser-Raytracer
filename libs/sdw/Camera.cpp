@@ -437,24 +437,24 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	float areaOfSphere = sqrDistances[K_NEIGHBOURS - 1] * M_PI;
 	float r = sqrtf(sqrDistances[K_NEIGHBOURS - 1]);
 	glm::vec3 colour = glm::vec3(0,0,0);
-	// glm::vec3 specColour = glm::vec3(0,0,0);
+	glm::vec3 specColour = glm::vec3(0,0,0);
 	for (int i = 0; i < colours.size(); i++)
 	{
 		//cone filtering
 		float dst = fmax(0, 1 - sqrtf(sqrDistances[i] / r));
 		float dot = glm::dot(-colours[i].dir, normal);
-		// glm::vec3 refl = glm::reflect(rayDir, normal);
-		// float rdl = glm::dot(-colours[i].dir, refl);
-		// rdl = rdl <= 0 ? 0 : rdl;
+		glm::vec3 refl = glm::reflect(rayDir, normal);
+		float rdl = glm::dot(-colours[i].dir, refl);
+		rdl = rdl <= 0 ? 0 : rdl;
 		colour += (colours[i].intensity * (float)fmax(0, dot)) * dst;
-		// specColour += colours[i].intensity * powf(rdl, 8) * dst;
+		specColour += colours[i].intensity * powf(rdl, 8) * dst;
 	}
 	colour /= areaOfSphere * 0.33f;
 
 	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
 	glm::vec3 direct = render(albedo, normal, intersection, rayDir, models, lights);
 
-	return direct + colour * albedo;
+	return direct + colour * albedo + specColour;
 }
 
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap)
