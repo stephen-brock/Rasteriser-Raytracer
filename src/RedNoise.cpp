@@ -275,13 +275,13 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 	}
 }
 
-void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights)
+void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights, SDL_Event &event)
 {
 	window.clearPixels();
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 1000, 0.75f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 1000, 0.33f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -291,6 +291,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 			uint32_t intCol = colourToInt(col);
 			window.setPixelColour(i, j, intCol);
 		}
+		if (window.pollForInputEvents(event)) handleEvent(event, window);
 		window.renderFrame();
 	}
 
@@ -358,8 +359,8 @@ int main(int argc, char *argv[]) {
 	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
 	std::vector<Light> lights = std::vector<Light>();
-	// lights.push_back(Light(glm::vec3(1.0f, 2.0f, 1.5f), glm::vec3(4000,4000,4000)));
-	createSoftLight(lights, glm::vec3(0.f, 0.65f, 0.f), glm::vec3(500,500,500), 3, 2, 0.05f, 1);
+	lights.push_back(Light(glm::vec3(-1.5f, 0.4f, 1.25f), glm::vec3(8000,8000,8000)));
+	// createSoftLight(lights, glm::vec3(0.f, 0.f, 0.f), glm::vec3(500,500,500), 3, 2, 0.05f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
@@ -407,7 +408,7 @@ int main(int argc, char *argv[]) {
 			}
 			else 
 			{
-				traceDraw(window, *models, lights);
+				traceDraw(window, *models, lights, event);
 			}
 
 			rendered = true;

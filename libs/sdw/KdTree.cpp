@@ -52,43 +52,22 @@ Photon Node::Search(glm::vec3 &location, float &closestDistance, int depth)
 void Node::SearchKNeighbours(glm::vec3 &location, std::array<Photon, K_NEIGHBOURS> &colours, std::array<float, K_NEIGHBOURS> &sqrDistances, int depth)
 {
     int axis = depth % 3;
-    Node* nextNode = location[axis] > this->location[axis] ? rightChild : leftChild;
-    glm::vec3 dir = this->location - location;
+    glm::vec3 dir = location - this->location;
+    float dirValue = dir[axis];
+    Node* nextNode = dirValue > 0 ? rightChild : leftChild;
+    Node* otherNode = dirValue > 0 ? leftChild : rightChild;
     Photon col = colour;
-    float thisDistance = glm::dot(dir, dir);
-    setMinimumDistance(colours, sqrDistances, col, thisDistance);
     
     if (nextNode != nullptr)
     {
-        for (int i = 0; i < K_NEIGHBOURS; i++)
-        {
-            dstCache[i] = 10000000;
-        }
-        nextNode->SearchKNeighbours(location, colCache, dstCache, depth + 1);
-        for (int i = 0; i < K_NEIGHBOURS; i++)
-        {
-            setMinimumDistance(colours, sqrDistances, colCache[i], dstCache[i]);
-        }
-        
+        nextNode->SearchKNeighbours(location, colours, sqrDistances, depth + 1);
     }
 
-    Node* otherNode = location[axis] > this->location[axis] ? leftChild : rightChild;
-    if (otherNode != nullptr)
+    float thisDistance = glm::dot(dir, dir);
+    setMinimumDistance(colours, sqrDistances, col, thisDistance);
+    if (otherNode != nullptr && dirValue * dirValue <= sqrDistances[K_NEIGHBOURS - 1])
     {
-        glm::vec3 otherDir = location - this->location;
-        // does hypersphere cross the hyperplane
-        if (otherDir[axis] * otherDir[axis] <= sqrDistances[K_NEIGHBOURS - 1])
-        {
-            for (int i = 0; i < K_NEIGHBOURS; i++)
-            {
-                dstCache[i] = 10000000;
-            }
-            otherNode->SearchKNeighbours(location, colCache, dstCache, depth + 1);
-            for (int i = 0; i < K_NEIGHBOURS; i++)
-            {
-                setMinimumDistance(colours, sqrDistances, colCache[i], dstCache[i]);
-            }
-        }
+        otherNode->SearchKNeighbours(location, colours, sqrDistances, depth + 1);
     }
 }
 
@@ -125,10 +104,8 @@ Node::~Node()
 void Node::Insert(glm::vec3 &location, Photon &colour, int depth)
 {
     int axis = depth % 3;
-    int value = location[axis];
-    int thisValue = location[axis];
-    // std::cout << depth << std::endl;
-    if (value > thisValue)
+    float dir = location[axis] - this->location[axis];
+    if (dir < 0)
     {
         if (leftChild == nullptr)
         {
@@ -157,15 +134,12 @@ KdTree::KdTree() = default;
 KdTree::KdTree(std::vector<glm::vec3> &location, std::vector<Photon> &data)
 {
     root = new Node(location[0], data[0]);
-    std::vector<float> test = std::vector<float>();
-    test.push_back(1);
-    test.push_back(2);
-    test.push_back(4);
     for (int i = 1; i < data.size(); i++)
     {
         root->Insert(location[i], data[i]);
     }
 }
+
 Photon KdTree::Search(glm::vec3 &location, float &sqrDistance)
 {
     return root->Search(location, sqrDistance);

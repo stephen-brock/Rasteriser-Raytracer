@@ -280,22 +280,15 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 		glm::vec3 origin = light.position;
 		glm::vec3 lightIntensity = light.colour / (float)iterations;
 		Photon photon;
-		float absorbProbability = 1;
-		int bounces = 0;
+		float absorbProbability = 0;
 		
-		while ((float)(rand()) / RAND_MAX >= absorbProbability || bounces <= 1)
+		while ((float)(rand()) / RAND_MAX >= absorbProbability)
 		{
-			RayTriangleIntersection newIntersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
-			if (newIntersection.modelIndex == -1)
+			intersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
+			if (intersection.modelIndex == -1)
 			{
-				if (bounces <= 1)
-				{
-					bounces = 0;
-				}
 				break;
 			}
-
-			intersection = newIntersection;
 
 			Model &model = *models[intersection.modelIndex];
 			Material* material = model.material;
@@ -365,14 +358,9 @@ KdTree* Camera::renderPhotonMap(std::vector<Model*> &models, std::vector<Light> 
 				}
 			}
 
-			dir = lightDir;
-			bounces++;
-		}
-		
-		if (bounces > 0)
-		{
 			positions->push_back(intersection.intersectionPoint);
 			intensities->push_back(photon);
+			dir = lightDir;
 		}
 		
 	}
@@ -430,8 +418,11 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	{
 		if (material->refract)
 		{
+			float f = fresnel(rayDir, normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, normal, material->refractiveIndex);
-			return renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
+			glm::vec3 reflectDir = glm::reflect(rayDir, normal);
+			glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
+			return renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) + reflectCol * f;
 		}
 		else if (material->mirror)
 		{
@@ -440,29 +431,30 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 		}
 	}
 	
-
 	std::array<float, K_NEIGHBOURS> sqrDistances;
 	std::array<Photon, K_NEIGHBOURS> colours = photonMap->SearchKNeighbours(intersection.intersectionPoint, sqrDistances);
 	
 	float areaOfSphere = sqrDistances[K_NEIGHBOURS - 1] * M_PI;
 	float r = sqrtf(sqrDistances[K_NEIGHBOURS - 1]);
 	glm::vec3 colour = glm::vec3(0,0,0);
-	glm::vec3 specColour = glm::vec3(0,0,0);
+	// glm::vec3 specColour = glm::vec3(0,0,0);
 	for (int i = 0; i < colours.size(); i++)
 	{
+		//cone filtering
 		float dst = fmax(0, 1 - sqrtf(sqrDistances[i] / r));
 		float dot = glm::dot(-colours[i].dir, normal);
-		glm::vec3 refl = glm::reflect(rayDir, normal);
-		float rdl = glm::dot(-colours[i].dir, refl);
-		rdl = rdl <= 0 ? 0 : rdl;
-		colour += (colours[i].intensity * (float)fmax(0, dot) + colours[i].intensity * powf(rdl, 8)) * dst;
+		// glm::vec3 refl = glm::reflect(rayDir, normal);
+		// float rdl = glm::dot(-colours[i].dir, refl);
+		// rdl = rdl <= 0 ? 0 : rdl;
+		colour += (colours[i].intensity * (float)fmax(0, dot)) * dst;
+		// specColour += colours[i].intensity * powf(rdl, 8) * dst;
 	}
 	colour /= areaOfSphere * 0.33f;
 
 	glm::vec3 albedo = material->sampleAlbedo(texcoord.x, texcoord.y);
 	glm::vec3 direct = render(albedo, normal, intersection, rayDir, models, lights);
 
-	return colour * albedo + specColour + direct;
+	return direct + colour * albedo;
 }
 
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap)
