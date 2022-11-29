@@ -4,15 +4,44 @@
 Model::Model() 
 {
     this->verts = new std::vector<ModelVertex>();
+    this->transformedVerts = new std::vector<ModelVertex>();
     this->triangles = new std::vector<ModelTriangle>();
     this->material = nullptr;
+    this->transform = glm::mat4(
+        1.0f,0.0f,0.0f,0.0f,
+        0.0f,1.0f,0.0f,0.0f,
+        0.0f,0.0f,1.0f,0.0f,
+        0.0f,0.0f,0.0f,1.0f
+    );
 }
 
 Model::Model(Material* material)
 {
     this->verts = new std::vector<ModelVertex>();
+    this->transformedVerts = new std::vector<ModelVertex>();
     this->triangles = new std::vector<ModelTriangle>();
     this->material = material;
+    this->transform = glm::mat4(
+        1.0f,0.0f,0.0f,0.0f,
+        0.0f,1.0f,0.0f,0.0f,
+        0.0f,0.0f,1.0f,0.0f,
+        0.0f,0.0f,0.0f,1.0f
+    );
+}
+
+ModelVertex& Model::GetVertex(int index)
+{
+    return verts->at(index);
+}
+
+int Model::VertexAmount()
+{
+    return verts->size();
+}
+
+void Model::AddVertex(ModelVertex &vertex)
+{
+    verts->push_back(vertex);
 }
 
 void Model::AddTriangle(int v0, int v1, int v2)
@@ -35,6 +64,19 @@ void Model::NormaliseNormals()
     {
         ModelVertex& v = (verts->at(i));
         v.normalize();
+        transformedVerts->push_back(v);
+    }
+    
+}
+
+void Model::TransformVerticies()
+{
+    for (int i = 0; i < verts->size(); i++)
+    {
+        transformedVerts->at(i).pos = glm::vec3(transform * glm::vec4(verts->at(i).pos, 1.0f));
+        transformedVerts->at(i).normal = glm::vec3(transform * glm::vec4(verts->at(i).normal, 0.0f));
+        transformedVerts->at(i).binormal = glm::vec3(transform * glm::vec4(verts->at(i).binormal, 0.0f));
+        transformedVerts->at(i).tangent = glm::vec3(transform * glm::vec4(verts->at(i).tangent, 0.0f));
     }
 }
 

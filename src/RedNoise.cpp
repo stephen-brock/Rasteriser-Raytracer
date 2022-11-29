@@ -174,7 +174,7 @@ void fillTriangle(CanvasTriangle triangle, Material* material, float **depthBuff
 
 void handleEvent(SDL_Event event, DrawingWindow &window) {
 	if (event.type == SDL_KEYDOWN) {
-		if (event.key.keysym.sym == SDLK_0) 
+		if (event.key.keysym.sym == SDLK_0)
 		{
 			renderMode = 0;
 		}
@@ -214,9 +214,9 @@ void wireframeDraw(DrawingWindow &window, std::vector<Model*> &models)
 		for (int i = 0; i < model.triangles->size(); i++)
 		{
 			ModelTriangle tri = model.triangles->at(i);
-			glm::vec3 mv1 = model.verts->at(tri.vertices[0]).pos;
-			glm::vec3 mv2 = model.verts->at(tri.vertices[1]).pos;
-			glm::vec3 mv3 = model.verts->at(tri.vertices[2]).pos;
+			glm::vec3 mv1 = model.transformedVerts->at(tri.vertices[0]).pos;
+			glm::vec3 mv2 = model.transformedVerts->at(tri.vertices[1]).pos;
+			glm::vec3 mv3 = model.transformedVerts->at(tri.vertices[2]).pos;
 			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1, 1));
 			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2, 1));
 			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3, 1));
@@ -242,9 +242,9 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 		for (int i = 0; i < model.triangles->size(); i++)
 		{
 			ModelTriangle tri = model.triangles->at(i);
-			ModelVertex& mv1 = model.verts->at(tri.vertices[0]);
-			ModelVertex& mv2 = model.verts->at(tri.vertices[1]);
-			ModelVertex& mv3 = model.verts->at(tri.vertices[2]);
+			ModelVertex& mv1 = model.transformedVerts->at(tri.vertices[0]);
+			ModelVertex& mv2 = model.transformedVerts->at(tri.vertices[1]);
+			ModelVertex& mv3 = model.transformedVerts->at(tri.vertices[2]);
 			glm::vec3 v1 = camera.getCanvasIntersectionPoint(glm::vec4(mv1.pos, 1));
 			glm::vec3 v2 = camera.getCanvasIntersectionPoint(glm::vec4(mv2.pos, 1));
 			glm::vec3 v3 = camera.getCanvasIntersectionPoint(glm::vec4(mv3.pos, 1));
@@ -281,7 +281,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 50000, 0.33f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 500, 0.33f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -323,7 +323,6 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 	int samples = segments * heightSegments * shells + 2;
 	colour /= samples;
 	float angleIncrement = 2 * M_PI / segments;
-	// float heightCenter = (heightSegments) / 2.0f;
 	for (int r = 0; r < shells; r++)
 	{
 		float radius = size * ((float)(r + 1) / shells);
@@ -333,7 +332,6 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 			for (int j = 0; j < heightSegments; j++)
 			{
 				float tj = (float)(j + 1) / (heightSegments + 1);
-				//float tj = 4.0f * (float)(j - heightCenter + 1) / (heightSegments + 1);
 				float cosj = cos(tj * M_PI);
 				float sinj = sin(tj * M_PI);
 				glm::vec3 offset = glm::vec3(sin(angle) * sinj, cosj, cos(angle) * sinj);
@@ -362,8 +360,9 @@ int main(int argc, char *argv[]) {
 	// lights.push_back(Light(glm::vec3(0.5f, -1.5f, 2.0f), glm::vec3(5000,5000,5000)));
 	createSoftLight(lights, glm::vec3(-.3f, 0.3f, 0.25f), glm::vec3(800,800,800), 3, 3, 0.05f, 2);
 	float angle = 0;
-	auto cameraToWorld = matrixTRS(glm::vec3(5,5,1), glm::vec3(0,0,0));
+	auto cameraToWorld = matrixTRS(glm::vec3(0,0,2.3), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
+
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
 	for (int i = 0; i < window.width; i++)
@@ -387,8 +386,17 @@ int main(int argc, char *argv[]) {
 		}
 		glm::vec3 orbit = glm::vec3(0,0,0);
 		// glm::vec3 orbit = glm::vec3(1.5,1.5,0);
-		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, -0.3f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
+		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, -0.3f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
+
+		models->at(6)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
+		models->at(7)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
+
+		for (int i = 0; i < models->size(); i++)
+		{
+			models->at(i)->TransformVerticies();
+		}
+		
 
 		if (renderMode == 0)
 		{

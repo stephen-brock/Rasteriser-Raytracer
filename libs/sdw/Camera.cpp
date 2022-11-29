@@ -55,9 +55,9 @@ RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 &origin, glm::v
 		for (int i = 0; i < model.triangles->size(); i++)
 		{
 			ModelTriangle triangle = model.triangles->at(i);
-			glm::vec3 v0 = model.verts->at(triangle.vertices[0]).pos;
-			glm::vec3 v1 = model.verts->at(triangle.vertices[1]).pos;
-			glm::vec3 v2 = model.verts->at(triangle.vertices[2]).pos;
+			glm::vec3 v0 = model.transformedVerts->at(triangle.vertices[0]).pos;
+			glm::vec3 v1 = model.transformedVerts->at(triangle.vertices[1]).pos;
+			glm::vec3 v2 = model.transformedVerts->at(triangle.vertices[2]).pos;
 			glm::vec3 e0 = v1 - v0;
 			glm::vec3 e1 = v2 - v0;
 			glm::vec3 SPVector = origin - v0;
@@ -189,9 +189,9 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
 	Material *material = model.material;
 
-	ModelVertex &v0 = model.verts->at(tri.vertices[0]);
-	ModelVertex &v1 = model.verts->at(tri.vertices[1]);
-	ModelVertex &v2 = model.verts->at(tri.vertices[2]);
+	ModelVertex &v0 = model.transformedVerts->at(tri.vertices[0]);
+	ModelVertex &v1 = model.transformedVerts->at(tri.vertices[1]);
+	ModelVertex &v2 = model.transformedVerts->at(tri.vertices[2]);
 	ModelVertex interpolated;
 	interpolateVertexData(v0, v1, v2, interpolated, u, v);
 	material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);
@@ -224,7 +224,7 @@ void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> 
 	for (int m = 0; m < models.size(); m++)
 	{
 		vertexColours.push_back(std::vector<glm::vec3>());
-		for (int i = 0; i < models[m]->verts->size(); i++)
+		for (int i = 0; i < models[m]->VertexAmount(); i++)
 		{
 			vertexColours[m].push_back(glm::vec3(0, 0, 0));
 		}
@@ -234,9 +234,9 @@ void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> 
 	{
 		Model &model = *models[m];
 
-		for (int i = 0; i < model.verts->size(); i++)
+		for (int i = 0; i < model.VertexAmount(); i++)
 		{
-			ModelVertex &vert = model.verts->at(i);
+			ModelVertex &vert = model.transformedVerts->at(i);
 			glm::vec3 rayDir = glm::normalize(vert.pos - cameraPos);
 			RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, -1, m);
 			glm::vec3 albedo = model.material->sampleAlbedo(vert.normal.x, vert.normal.y);
@@ -302,9 +302,9 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 
 			ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
 
-			ModelVertex &v0 = model.verts->at(tri.vertices[0]);
-			ModelVertex &v1 = model.verts->at(tri.vertices[1]);
-			ModelVertex &v2 = model.verts->at(tri.vertices[2]);
+			ModelVertex &v0 = model.transformedVerts->at(tri.vertices[0]);
+			ModelVertex &v1 = model.transformedVerts->at(tri.vertices[1]);
+			ModelVertex &v2 = model.transformedVerts->at(tri.vertices[2]);
 			ModelVertex interpolated;
 			interpolateVertexData(v0, v1, v2, interpolated, u, v);
 			material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);
@@ -387,9 +387,9 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	float v = intersection.v;
 
 	ModelTriangle &tri = model.triangles->at(intersection.triangleIndex);
-	ModelVertex &v0 = model.verts->at(tri.vertices[0]);
-	ModelVertex &v1 = model.verts->at(tri.vertices[1]);
-	ModelVertex &v2 = model.verts->at(tri.vertices[2]);
+	ModelVertex &v0 = model.transformedVerts->at(tri.vertices[0]);
+	ModelVertex &v1 = model.transformedVerts->at(tri.vertices[1]);
+	ModelVertex &v2 = model.transformedVerts->at(tri.vertices[2]);
 	ModelVertex interpolated;
 	interpolateVertexData(v0, v1, v2, interpolated, u, v);
 	material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);

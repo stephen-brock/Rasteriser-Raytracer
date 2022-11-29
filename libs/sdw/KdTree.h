@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 #include "Photon.h"
-#define K_NEIGHBOURS 200
+#define K_NEIGHBOURS 10
 
 struct Node
 {

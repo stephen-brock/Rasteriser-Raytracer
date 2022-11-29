@@ -81,9 +81,9 @@ void triFromString(Model &model, std::vector<glm::vec2> &texcoords, std::string 
 	int tZ = std::stoi(stringRange(s, zTo + 1, s.length())) - 1;
 
 	model.AddTriangle(x - fromCount, y - fromCount, z - fromCount);
-	model.verts->at(x - fromCount).texcoord = texcoords[tX];
-	model.verts->at(y - fromCount).texcoord = texcoords[tY];
-	model.verts->at(z - fromCount).texcoord = texcoords[tZ];
+	model.GetVertex(x - fromCount).texcoord = texcoords[tX];
+	model.GetVertex(y - fromCount).texcoord = texcoords[tY];
+	model.GetVertex(z - fromCount).texcoord = texcoords[tZ];
 }
 
 std::string getMatNameFromString(std::string s)
@@ -180,14 +180,14 @@ void loadObjOld(std::vector<Model*> &models, std::string path, std::unordered_ma
 					glm::vec3 pos = vertFromString(line, scale);
 					ModelVertex mv = ModelVertex(pos);
 					mv.texcoord = glm::vec2(pos.x / 2, pos.z / 2);
-					model->verts->push_back(mv);
+					model->AddVertex(mv);
 				}
 				else if (line[0] == 'f')
 				{	
 					triFromStringOld(*model, line, fromCount);
 				}
 			}
-			fromCount += model->verts->size();
+			fromCount += model->VertexAmount();
 			model->NormaliseNormals();
 			models.push_back(model);
 		}
@@ -217,7 +217,7 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 					{
 						glm::vec3 pos = vertFromString(line, scale);
 						ModelVertex mv = ModelVertex(pos);
-						model->verts->push_back(mv);
+						model->AddVertex(mv);
 					}
 					else if (line[1] == 't')
 					{
@@ -230,7 +230,7 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 					triFromString(*model, texcoords, line, fromCount);
 				}
 			}
-			fromCount += model->verts->size();
+			fromCount += model->VertexAmount();
 			model->NormaliseNormals();
 			models.push_back(model);
 		}
