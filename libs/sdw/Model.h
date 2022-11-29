@@ -3,6 +3,7 @@
 #include <vector>
 #include "ModelVertex.h"
 #include "Material.h"
+#include "TextureMap.h"
 
 class Model
 {
@@ -20,6 +21,7 @@ class Model
         void AddTriangle(int v0, int v1, int v2);
         void NormaliseNormals();
         void TransformVerticies();
+        void Displace(TextureMap &amp, TextureMap &nrm, glm::vec2 offset, float scale);
     private:
         std::vector<ModelVertex> *verts;
 };

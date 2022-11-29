@@ -68,6 +68,21 @@ void Model::NormaliseNormals()
     }
     
 }
+void Model::Displace(TextureMap &amp, TextureMap &nrm, glm::vec2 offset, float scale)
+{
+    for (int i = 0; i < verts->size(); i++)
+    {
+        ModelVertex &v = transformedVerts->at(i);
+        glm::vec2 texcoord = v.texcoord + offset;
+        float amplitude = (intToVector(amp.sample(texcoord.x, texcoord.y)).x - 0.5f) * scale;
+        v.pos += glm::vec3(0, amplitude, 0);
+        glm::vec3 absOffset = intToVector(amp.sample(texcoord.x, texcoord.y)) * scale;
+        
+        glm::vec3 offset = (absOffset - glm::vec3(0.5f, 0.5f, 0.5f)) * 2.0f * scale + glm::vec3(0,0,1) * (1 - scale);
+        v.normal = glm::normalize(v.normal * offset.z + v.binormal * offset.x + v.tangent * offset.y);
+    }
+}
+
 
 void Model::TransformVerticies()
 {

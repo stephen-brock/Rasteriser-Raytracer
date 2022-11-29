@@ -281,7 +281,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 10000, 0.7f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 100000, 0.7f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -352,14 +352,14 @@ int main(int argc, char *argv[]) {
 
 	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/dancing_hall_1k.ppm"); 
 
-	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/scene.mtl");
+	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
-	// loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
-	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.35f);
+	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
+	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
 	lights.push_back(Light(glm::vec3(-0.7f, 0.5f, 1.0f), glm::vec3(800,700,500)));
 	// createSoftLight(lights, glm::vec3(-.1f, 0.6f, 0.3f), glm::vec3(800,800,800), 3, 2, 0.05f, 1);
-	float angle = 0;
+	float time = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,-0.7f,2.0f), glm::vec3(0,0,M_PI));
 	camera = Camera(300, cameraToWorld, window.width, window.height, environment);
 
@@ -376,17 +376,17 @@ int main(int argc, char *argv[]) {
 
 	bool rendered = false;
 	int frame = 0;
+
+	TextureMap displacement = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture.ppm");
+	TextureMap normal = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture_nrm.ppm");
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		if (!rendered)
-		{
-			angle += 0.01;
-		}
-		glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
-		// glm::vec3 orbit = glm::vec3(1.5,1.5,0);
-		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, -0.3f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
+		time += 1.0f;
+		// glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
+		glm::vec3 orbit = glm::vec3(0,0,0);
+		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(time * 0.05f) * 2.3f, -0.3f,cos(time * 0.05f) * 2.3f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
 		// models->at(0)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
@@ -395,6 +395,8 @@ int main(int argc, char *argv[]) {
 		{
 			models->at(i)->TransformVerticies();
 		}
+		// models->at(6)->Displace(displacement, normal, glm::vec2(0, time * 0.0000325f), 0.1f);
+		
 
 		if (renderMode == 0)
 		{

@@ -1,7 +1,5 @@
 #include "TextureMap.h"
 
-const float UVScale = 20;
-
 TextureMap::TextureMap() = default;
 TextureMap::TextureMap(const std::string &filename) {
 	std::ifstream inputStream(filename, std::ifstream::binary);
@@ -33,8 +31,8 @@ TextureMap::TextureMap(const std::string &filename) {
 
 uint32_t TextureMap::sample(float u, float v)
 {
-    u = u < 0 ? 1 - fmod(-u * UVScale, 1) : fmod(u * UVScale, 1);
-    v = v < 0 ? 1 - fmod(-v * UVScale, 1) : fmod(v * UVScale, 1);
+    u = u < 0 ? 1 - fmod(-u, 1) : fmod(u, 1);
+    v = v < 0 ? 1 - fmod(-v, 1) : fmod(v, 1);
 	return pixels[floor(v * height) * width + floor(u * width)];
 }
 
