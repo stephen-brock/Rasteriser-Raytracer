@@ -352,16 +352,16 @@ int main(int argc, char *argv[]) {
 
 	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/dancing_hall_1k.ppm"); 
 
-	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
+	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/scene.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
-	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
-	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.25f);
+	// loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
+	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
-	// lights.push_back(Light(glm::vec3(1.5f, 0.5f, 1.25f), glm::vec3(1000,1000,1000)));
-	createSoftLight(lights, glm::vec3(-.1f, 0.6f, 0.3f), glm::vec3(800,800,800), 3, 2, 0.05f, 1);
+	lights.push_back(Light(glm::vec3(-0.7f, 0.5f, 1.0f), glm::vec3(800,700,500)));
+	// createSoftLight(lights, glm::vec3(-.1f, 0.6f, 0.3f), glm::vec3(800,800,800), 3, 2, 0.05f, 1);
 	float angle = 0;
-	auto cameraToWorld = matrixTRS(glm::vec3(0,0,2.3), glm::vec3(0,0,0));
-	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
+	auto cameraToWorld = matrixTRS(glm::vec3(0,-0.7f,2.0f), glm::vec3(0,0,M_PI));
+	camera = Camera(300, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -384,7 +384,7 @@ int main(int argc, char *argv[]) {
 		{
 			angle += 0.01;
 		}
-		glm::vec3 orbit = glm::vec3(0,0,0);
+		glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
 		// glm::vec3 orbit = glm::vec3(1.5,1.5,0);
 		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, -0.3f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);

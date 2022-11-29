@@ -30,7 +30,7 @@ glm::vec3 Camera::getCanvasIntersectionPoint(glm::vec4 vertexPosition)
 	glm::vec4 cPos = vertexPosition * worldToCamera;
 	cPos *= 230.0f;
 	cPos.z = -cPos.z;
-	float u = focalLength * cPos.x / fabs(cPos.z) + width / 2;
+	float u = focalLength * -cPos.x / fabs(cPos.z) + width / 2;
 	float v = height / 2 - focalLength * cPos.y / fabs(cPos.z);
 
 	return glm::vec3(u, v, cPos.z);
@@ -40,7 +40,7 @@ glm::vec3 Camera::getRayDirection(float u, float v)
 {
 	float y = (v - (float)height / 2.0) / -focalLength;
 	float x = (u - (float)width / 2.0) / focalLength;
-	glm::vec4 localDir = glm::vec4(x, y, -1, 0);
+	glm::vec4 localDir = glm::vec4(-x, y, -1, 0);
 	glm::vec4 dir = localDir * cameraToWorld;
 	return glm::normalize(glm::vec3(dir));
 }
@@ -324,7 +324,7 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 			if (material->refract || material->mirror)
 			{
 				float f = fresnel(dir, interpolated.normal, material->refractiveIndex);
-				if (material->mirror || ((float)(rand()) / RAND_MAX <= f && false))
+				if (material->mirror || ((float)(rand()) / RAND_MAX <= f))
 				{
 					dir = glm::reflect(dir, interpolated.normal);
 				}
