@@ -207,6 +207,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	interpolateVertexData(v0, v1, v2, interpolated, u, v);
 	material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);
 
+	glm::vec3 albedo = material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y);
 	if (currentDepth < MaxRayDepth)
 	{
 		if (model.material->refract)
@@ -214,17 +215,21 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
-			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex);
-			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * (1 - f) + reflectCol * f;
+			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo;
+			glm::vec3 a = glm::vec3(0,0,0);
+			glm::vec3 surface = render(a, interpolated.normal, intersection, rayDir, models, lights);
+			reflectCol += surface;
+			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * (1 - f) + reflectCol * f;
 		}
 		else if (model.material->mirror)
 		{
+			float f = fresnel(rayDir, interpolated.normal, 1.35f);
 			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
-			return renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex);
+			glm::vec3 surface = render(albedo, interpolated.normal, intersection, rayDir, models, lights);
+			return surface * (1 - f) + renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * f;
 		}
 	}
 
-	glm::vec3 albedo = material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y);
 	return render(albedo, interpolated.normal, intersection, rayDir, models, lights);
 }
 

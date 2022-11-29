@@ -357,7 +357,7 @@ int main(int argc, char *argv[]) {
 	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(-0.7f, 0.5f, 1.0f), glm::vec3(800,700,500)));
+	lights.push_back(Light(glm::vec3(0.2f, 0.f, 1.0f), glm::vec3(700,700,700)));
 	// createSoftLight(lights, glm::vec3(-.1f, 0.6f, 0.3f), glm::vec3(800,800,800), 3, 2, 0.05f, 1);
 	float time = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,-0.7f,2.0f), glm::vec3(0,0,M_PI));
@@ -377,8 +377,8 @@ int main(int argc, char *argv[]) {
 	bool rendered = false;
 	int frame = 0;
 
-	TextureMap displacement = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture.ppm");
-	TextureMap normal = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture_nrm.ppm");
+	// TextureMap displacement = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture.ppm");
+	// TextureMap normal = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture_nrm.ppm");
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
