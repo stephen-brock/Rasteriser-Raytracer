@@ -198,18 +198,18 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 
 	if (currentDepth < MaxRayDepth)
 	{
-		glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
-		glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex);
 		if (model.material->refract)
 		{
 			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
-			glm::vec3 refractCol = renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex);
-			return refractCol * (1 - f) + reflectCol * f;
+			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
+			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex);
+			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * (1 - f) + reflectCol * f;
 		}
 		else if (model.material->mirror)
 		{
-			return reflectCol;
+			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
+			return renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex);
 		}
 	}
 
@@ -396,18 +396,18 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 
 	if (currentDepth <= MaxRayDepth)
 	{
-		glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
-		glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
 		if (material->refract)
 		{
 			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
-			glm::vec3 refractCol = renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
-			return refractCol * (1 - f) + reflectCol * f;
+			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
+			glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
+			return renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) + reflectCol * f;
 		}
 		else if (material->mirror)
 		{
-			return reflectCol;
+			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
+			return renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
 		}
 	}
 

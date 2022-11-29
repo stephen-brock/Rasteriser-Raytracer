@@ -281,7 +281,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 500, 0.33f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 5000, 0.33f);
 
 	for (int i = 0; i < window.width; i++)
 	{
