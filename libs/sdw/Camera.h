@@ -12,6 +12,7 @@
 class Camera {
     public:
         glm::mat4 cameraToWorld;
+        glm::vec3 cameraPosition;
         float focalLength;
         Environment* environment;
         glm::vec3 getCanvasIntersectionPoint(glm::vec4 vertexPosition);

@@ -80,6 +80,8 @@ void triFromString(Model &model, std::vector<glm::vec2> &texcoords, std::string 
 	int z = std::stoi(stringRange(s, tYTo + 1, zTo)) - 1;
 	int tZ = std::stoi(stringRange(s, zTo + 1, s.length())) - 1;
 
+	// std::cout << x << " " << y << " " << z << std::endl;
+
 	model.AddTriangle(x - fromCount, y - fromCount, z - fromCount);
 	model.GetVertex(x - fromCount).texcoord = texcoords[tX];
 	model.GetVertex(y - fromCount).texcoord = texcoords[tY];
@@ -206,10 +208,12 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 	{
 		if (line[0] == 'o') 
 		{
+			std::cout << line << std::endl;
 			getline(file, line);
+			std::cout << line << std::endl;
 			std::string mat = getMatNameFromString(line);
 			Model* model = new Model(materials[mat]);
-			while (getline(file, line) && line[0] != 'o') 
+			while (getline(file, line) && line.length() > 1) 
 			{
 				if (line[0] == 'v')
 				{
@@ -228,6 +232,11 @@ void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<s
 				else if (line[0] == 'f')
 				{	
 					triFromString(*model, texcoords, line, fromCount);
+				}
+				else
+				{
+					// std::cout << "Unknonwn line: " << line << std::endl;
+					// std::cout << line[1] << std::endl;
 				}
 			}
 			fromCount += model->VertexAmount();

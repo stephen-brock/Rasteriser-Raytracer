@@ -281,7 +281,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 5000, 0.33f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 30000, 0.7f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -354,11 +354,11 @@ int main(int argc, char *argv[]) {
 
 	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
-	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
-	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/logo.obj", *materials, 0.005f);
+	// loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
+	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.25f);
 	std::vector<Light> lights = std::vector<Light>();
-	// lights.push_back(Light(glm::vec3(0.5f, -1.5f, 2.0f), glm::vec3(5000,5000,5000)));
-	createSoftLight(lights, glm::vec3(-.3f, 0.3f, 0.25f), glm::vec3(800,800,800), 3, 3, 0.05f, 2);
+	lights.push_back(Light(glm::vec3(0.0f, 0.5f, 0.7f), glm::vec3(50,50,50)));
+	// createSoftLight(lights, glm::vec3(-.1f, 0.6f, 0.3f), glm::vec3(800,800,800), 3, 2, 0.05f, 1);
 	float angle = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,0,2.3), glm::vec3(0,0,0));
 	camera = Camera(200, cameraToWorld, window.width, window.height, environment);
@@ -389,8 +389,7 @@ int main(int argc, char *argv[]) {
 		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(angle) * 2.3f, -0.3f,cos(angle) * 2.3f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
-		models->at(6)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
-		models->at(7)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
+		models->at(0)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
 
 		for (int i = 0; i < models->size(); i++)
 		{

@@ -7,7 +7,8 @@
 #include "Light.h"
 #include <iostream>
 
-const int MaxRayDepth = 10;
+const int MaxRayDepth = 4;
+const int MaxBounces = 5;
 
 Camera::Camera()
 {
@@ -146,17 +147,27 @@ float Camera::fresnel(glm::vec3 &rayDir, glm::vec3 &normal, float n0)
 	}
 }
 
+//used code/logic from https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
 glm::vec3 Camera::refract(glm::vec3 &rayDir, glm::vec3 &normal, float ior)
 {
 	glm::vec3 nrm = normal;
 	float dot = glm::dot(rayDir, normal);
-	if (dot > 0)
+	float etai = 1;
+	float etat = ior;
+	if (dot < 0)
 	{
+		dot = -dot;
+	}
+	else 
+	{
+		std::swap(etai, etat);
 		nrm = -nrm;
-		ior = 1 / ior;
 	}
 
-	return glm::refract(rayDir, nrm, ior);
+	float eta = etai / etat;
+	float k = 1 - eta * eta * (1 - dot * dot);
+
+	return k < 0 ? glm::vec3(0,0,0) : eta * rayDir + (eta * dot - sqrtf(k)) * nrm;
 }
 
 void Camera::interpolateVertexData(ModelVertex &v0, ModelVertex &v1, ModelVertex &v2, ModelVertex &out, float u, float v)
@@ -219,8 +230,6 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 
 void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
 {
-	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
-
 	for (int m = 0; m < models.size(); m++)
 	{
 		vertexColours.push_back(std::vector<glm::vec3>());
@@ -237,7 +246,7 @@ void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> 
 		for (int i = 0; i < model.VertexAmount(); i++)
 		{
 			ModelVertex &vert = model.transformedVerts->at(i);
-			glm::vec3 rayDir = glm::normalize(vert.pos - cameraPos);
+			glm::vec3 rayDir = glm::normalize(vert.pos - cameraPosition);
 			RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, -1, m);
 			glm::vec3 albedo = model.material->sampleAlbedo(vert.normal.x, vert.normal.y);
 
@@ -249,9 +258,8 @@ void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> 
 Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model *> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
-	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
 
-	RayTriangleIntersection intersection = Camera::getClosestIntersection(cameraPos, rayDir, models);
+	RayTriangleIntersection intersection = Camera::getClosestIntersection(cameraPosition, rayDir, models);
 
 	if (intersection.triangleIndex == -1)
 	{
@@ -275,6 +283,7 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 	std::cout << "K Neighbours " << K_NEIGHBOURS << std::endl;
 	std::vector<glm::vec3> *positions = new std::vector<glm::vec3>();
 	std::vector<Photon> *intensities = new std::vector<Photon>();
+	Photon photon;
 
 	for (int i = 0; i < iterations; i++)
 	{
@@ -282,11 +291,11 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 		glm::vec3 dir = glm::normalize(glm::vec3((float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f));
 		RayTriangleIntersection intersection = RayTriangleIntersection();
 		glm::vec3 origin = light.position;
-		glm::vec3 lightIntensity = light.colour / (float)iterations;
-		Photon photon;
+		glm::vec3 lightIntensity = light.colour * (1 - materialAbsorbProbability) / (float)iterations;
 		float absorbProbability = 0;
+		int bounces = 0;
 
-		while ((float)(rand()) / RAND_MAX >= absorbProbability)
+		while (((float)(rand()) / RAND_MAX >= absorbProbability && bounces <= MaxBounces) || bounces <= 1)
 		{
 			intersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
 			if (intersection.modelIndex == -1)
@@ -309,48 +318,48 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 			interpolateVertexData(v0, v1, v2, interpolated, u, v);
 			material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);
 
-			glm::vec3 lightDir = intersection.intersectionPoint - origin;
+			dir = glm::normalize(intersection.intersectionPoint - origin);
 
 			origin = intersection.intersectionPoint;
 			if (material->refract || material->mirror)
 			{
-				glm::vec3 nrmLightDir = glm::normalize(lightDir);
-				float f = fresnel(nrmLightDir, interpolated.normal, material->refractiveIndex);
-				if (material->mirror || (float)(rand()) / RAND_MAX <= f)
+				float f = fresnel(dir, interpolated.normal, material->refractiveIndex);
+				if (material->mirror || ((float)(rand()) / RAND_MAX <= f && false))
 				{
-					lightDir = glm::reflect(lightDir, interpolated.normal);
+					dir = glm::reflect(dir, interpolated.normal);
 				}
 				else
 				{
-					lightDir = refract(lightDir, interpolated.normal, material->refractiveIndex);
+					dir = refract(dir, interpolated.normal, material->refractiveIndex);
 				}
 				absorbProbability = 0;
 			}
 			else
 			{
-				photon = Photon();
-				photon.intensity = lightIntensity;
-				lightDir = glm::normalize(lightDir);
-				photon.dir = lightDir;
+				if (bounces > 0)
+				{
+					photon.intensity = lightIntensity;
+					photon.dir = dir;
+					positions->push_back(intersection.intersectionPoint);
+					intensities->push_back(photon);
+				}
 
-				float f = fresnel(lightDir, interpolated.normal, 1.35);
+				float f = fresnel(dir, interpolated.normal, 1.35);
 				if ((float)(rand()) / RAND_MAX <= f)
 				{
-					lightDir = glm::reflect(lightDir, interpolated.normal);
+					dir = glm::reflect(dir, interpolated.normal);
 				}
 				else
 				{
 					//diffuse
-					lightDir = glm::normalize(interpolated.normal * ((float)(rand()) / RAND_MAX) + interpolated.binormal * ((float)(rand()) / RAND_MAX - 0.5f) + interpolated.tangent * ((float)(rand()) / RAND_MAX - 0.5f));
+					dir = glm::normalize(interpolated.normal * ((float)(rand()) / RAND_MAX) + interpolated.binormal * ((float)(rand()) / RAND_MAX - 0.5f) + interpolated.tangent * ((float)(rand()) / RAND_MAX - 0.5f));
 					lightIntensity *= material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y);
 				}
 
 				absorbProbability = materialAbsorbProbability;
 			}
 
-			positions->push_back(intersection.intersectionPoint);
-			intensities->push_back(photon);
-			dir = lightDir;
+			bounces++;
 		}
 	}
 
@@ -368,7 +377,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.12f;
+	colour *= 0.2f;
 }
 
 glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap, int currentDepth, int ignoreIndex)
@@ -440,8 +449,7 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap)
 {
 	glm::vec3 rayDir = getRayDirection(x, y);
-	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
-	glm::vec3 colour = renderRayBaked(cameraPos, rayDir, models, lights, photonMap);
+	glm::vec3 colour = renderRayBaked(cameraPosition, rayDir, models, lights, photonMap);
 	tonemapping(colour);
 	return vectorToColour(colour);
 }
@@ -449,8 +457,7 @@ Colour Camera::renderTracedBaked(int x, int y, std::vector<Model *> &models, std
 Colour Camera::renderTraced(int x, int y, std::vector<Model *> &models, std::vector<Light> &lights)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
-	glm::vec3 cameraPos = glm::vec3(posFromMatrix(this->cameraToWorld));
-	glm::vec3 colour = renderRay(cameraPos, rayDir, models, lights);
+	glm::vec3 colour = renderRay(cameraPosition, rayDir, models, lights);
 	tonemapping(colour);
 	return vectorToColour(colour);
 }
@@ -458,4 +465,5 @@ Colour Camera::renderTraced(int x, int y, std::vector<Model *> &models, std::vec
 void Camera::updateTransform()
 {
 	this->worldToCamera = glm::inverse(cameraToWorld);
+	this->cameraPosition = glm::vec3(posFromMatrix(cameraToWorld));
 }

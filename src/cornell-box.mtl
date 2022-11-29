@@ -16,7 +16,7 @@ str 0.25
 
 newmtl Blue
 Kd 1.000000 1.000000 1.000000
-refract 1.45
+mirror
 
 newmtl Yellow
 Kd 1.000000 1.000000 0.000000
