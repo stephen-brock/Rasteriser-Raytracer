@@ -22,7 +22,7 @@ class Camera {
         Colour renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap);
         Colour renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         void initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
-        KdTree* renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, float reflectMultiplier, glm::vec3 &biasPosition, float biasAmount, float intensity);
+        KdTree* renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, float reflectMultiplier, const glm::vec3 &biasPosition, float biasAmount, float intensity);
         Camera();
         Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height, Environment* environment);
     private:

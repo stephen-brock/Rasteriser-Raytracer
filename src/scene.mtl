@@ -3,15 +3,30 @@ Kd 0.800000 0.800000 0.100000
 metallic 1.0
 
 newmtl Cube1
-Kd 0.100000 0.800000 0.800000
-metallic 0.0
+Kd 0.800000 0.800000 0.800000
+metallic 1.0
+mirror
 
 newmtl Cube2
 Kd 0.100000 0.100000 0.100000
 metallic 1.0
 
 newmtl Floor
-Kd 0.300000 0.300000 0.300000
+Kd 0.500000 0.500000 0.500000
+metallic 0.0
+tex /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Albedo.ppm
+nrm /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Nrm.ppm
+str 0.2
+
+newmtl LeftWall
+Kd 0.100000 0.800000 0.800000
+metallic 0.0
+tex /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Albedo.ppm
+nrm /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Nrm.ppm
+str 0.2
+
+newmtl RightWall
+Kd 0.800000 0.800000 0.100000
 metallic 0.0
 tex /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Albedo.ppm
 nrm /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Nrm.ppm
@@ -33,31 +48,31 @@ metallic 0.9
 refract 1.51
 
 newmtl Glass3
-Kd 0.100000 1.000000 1.000000
+Kd 0.200000 1.000000 1.000000
 metallic 0.9
 refract 1.51
 
 newmtl Glass4
-Kd 1.000000 0.100000 1.000000
+Kd 1.000000 0.200000 1.000000
 metallic 0.9
 refract 1.51
 
 newmtl Glass5
-Kd 1.000000 1.000000 0.100000
+Kd 1.000000 1.000000 0.2200000
 metallic 0.9
 refract 1.51
 
 newmtl Glass6
-Kd 0.100000 0.100000 1.000000
+Kd 0.200000 0.200000 1.000000
 metallic 0.9
 refract 1.51
 
 newmtl Glass7
-Kd 0.100000 1.000000 0.100000
+Kd 0.200000 1.000000 0.200000
 metallic 0.9
 refract 1.51
 
 newmtl Glass8
-Kd 1.000000 0.100000 0.100000
+Kd 1.000000 0.200000 0.200000
 metallic 0.9
 refract 1.51

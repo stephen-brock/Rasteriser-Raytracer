@@ -22,6 +22,7 @@
 #define HEIGHT 300
 
 const bool GouraudShading = false;
+const glm::vec3 WindowPosition = glm::vec3(0,0.35f,1.2);
 
 Camera camera;
 int renderMode = 1;
@@ -281,9 +282,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	glm::vec3 bias = glm::vec3(0,0.35f,1.2);
-
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 40000, 0.8f, bias, 5.0f, 0.02f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 10000, 0.75f, WindowPosition, 8.0f, 0.001f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -363,11 +362,11 @@ int main(int argc, char *argv[]) {
 	// lights.push_back(Light(glm::vec3(0.0f, .2f, .1f), glm::vec3(400,0,0)));
 	// lights.push_back(Light(glm::vec3(0.2f, 0.2f, -.1f), glm::vec3(0,400,0)));
 	// lights.push_back(Light(glm::vec3(-0.2f, 0.2f, -.1f), glm::vec3(0,0,400)));
-	lights.push_back(Light(glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400)));
-	createSoftLight(lights, glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400), 3, 2, 0.05f, 1);
-	float time = 0;
-	auto cameraToWorld = matrixTRS(glm::vec3(0,0.0f,1.0f), glm::vec3(0,0,M_PI));
-	camera = Camera(300, cameraToWorld, window.width, window.height, environment);
+	lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(2000,2000,2000)));
+	// createSoftLight(lights, glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400), 3, 2, 0.05f, 1);
+	float time = 28;
+	auto cameraToWorld = matrixTRS(glm::vec3(0.,-0.2f,0.9f), glm::vec3(0,0,M_PI));
+	camera = Camera(150, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -390,7 +389,6 @@ int main(int argc, char *argv[]) {
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		time += 1.0f;
 		// glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
 		glm::vec3 orbit = glm::vec3(0,0.1f,0);
 		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(time * 0.05f) * 1.0f, 0.5f,cos(time * 0.05f) * 1.0f), glm::vec3(0,0,M_PI));
@@ -403,7 +401,7 @@ int main(int argc, char *argv[]) {
 		}
 		// models->at(6)->Displace(displacement, normal, glm::vec2(0, time * 0.0000325f), 0.1f);
 		
-
+		lights[0].position = WindowPosition + glm::vec3(cos(time * 0.05f) * 3.0f, 1.0f + sin(time * 0.02f) * 0.5f, 5.0f + fabs(sin(time * 0.0f)));
 		if (renderMode == 0)
 		{
 			wireframeDraw(window, *models);
@@ -414,7 +412,7 @@ int main(int argc, char *argv[]) {
 			rasteriseDraw(window, depthBuffer, *models);
 			rendered = false;
 		}
-		else if (renderMode == 2 && !rendered)
+		else if (renderMode == 2)
 		{
 			if (GouraudShading)
 			{
@@ -428,6 +426,7 @@ int main(int argc, char *argv[]) {
 			rendered = true;
 			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
 			frame++;
+			time += 1.0f;
 		}
 
 		window.renderFrame();
