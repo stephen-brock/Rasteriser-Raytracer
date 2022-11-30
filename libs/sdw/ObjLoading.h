@@ -29,3 +29,4 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 
 void loadObjOld(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale);
 void loadObj(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale);
+void loadObjWithNormals(std::vector<Model*> &models, std::string path, std::unordered_map<std::string, Material*> &materials, float scale);
