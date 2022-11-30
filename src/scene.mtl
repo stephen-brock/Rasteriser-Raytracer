@@ -1,27 +1,55 @@
-newmtl Grey
+newmtl Metal
 Kd 0.700000 0.700000 0.700000
-metallic 0.0
-
-newmtl Logo
-Kd 0.800000 0.800000 0.800000
-metallic 0.9
-refract 1.51
+metallic 1.0
 
 newmtl Floor
-Kd 1.000000 1.000000 1.000000
+Kd 0.500000 0.500000 0.500000
 metallic 0.0
 tex /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Albedo.ppm
 nrm /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Nrm.ppm
-str 0.5
+str 0.2
 
-newmtl Red
-Kd 0.800000 0.000000 0.000000
-metallic 1.0
+newmtl Glass0
+Kd 0.100000 1.000000 0.300000
+metallic 0.9
+refract 1.51
 
-newmtl Green
-Kd 0.800000 0.000000 0.000000
-metallic 1.0
+newmtl Glass1
+Kd 0.200000 1.000000 0.400000
+metallic 0.9
+refract 1.51
 
-newmtl Blue
-Kd 0.800000 0.000000 0.000000
-metallic 1.0
+newmtl Glass2
+Kd 1.000000 0.400000 0.200000
+metallic 0.9
+refract 1.51
+
+newmtl Glass3
+Kd 0.100000 1.000000 1.000000
+metallic 0.9
+refract 1.51
+
+newmtl Glass4
+Kd 1.000000 0.100000 1.000000
+metallic 0.9
+refract 1.51
+
+newmtl Glass5
+Kd 1.000000 1.000000 0.100000
+metallic 0.9
+refract 1.51
+
+newmtl Glass6
+Kd 0.100000 0.100000 1.000000
+metallic 0.9
+refract 1.51
+
+newmtl Glass7
+Kd 0.100000 1.000000 0.100000
+metallic 0.9
+refract 1.51
+
+newmtl Glass8
+Kd 1.000000 0.100000 0.100000
+metallic 0.9
+refract 1.51

@@ -88,10 +88,10 @@ void Model::TransformVerticies()
 {
     for (int i = 0; i < verts->size(); i++)
     {
-        transformedVerts->at(i).pos = glm::vec3(transform * glm::vec4(verts->at(i).pos, 1.0f));
-        transformedVerts->at(i).normal = glm::vec3(transform * glm::vec4(verts->at(i).normal, 0.0f));
-        transformedVerts->at(i).binormal = glm::vec3(transform * glm::vec4(verts->at(i).binormal, 0.0f));
-        transformedVerts->at(i).tangent = glm::vec3(transform * glm::vec4(verts->at(i).tangent, 0.0f));
+        transformedVerts->at(i).pos = glm::vec3(glm::vec4(verts->at(i).pos, 1.0f) * transform);
+        transformedVerts->at(i).normal = glm::vec3(glm::vec4(verts->at(i).normal, 0.0f) * transform);
+        transformedVerts->at(i).binormal = glm::vec3(glm::vec4(verts->at(i).binormal, 0.0f) * transform);
+        transformedVerts->at(i).tangent = glm::vec3(glm::vec4(verts->at(i).tangent, 0.0f) * transform);
     }
 }
 
