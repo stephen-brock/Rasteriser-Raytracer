@@ -7,8 +7,8 @@
 #include "Light.h"
 #include <iostream>
 
-const int MaxRayDepth = 4;
-const int MaxBounces = 4;
+const int MaxRayDepth = 3;
+const int MaxBounces = 6;
 const float SpecularPower = 64;
 
 Camera::Camera()
@@ -118,7 +118,7 @@ glm::vec3 Camera::lightSurface(glm::vec3 &albedo, float metallic, glm::vec3 &spe
 	float rdl = glm::dot(lightDir, refl);
 	rdl = rdl <= 0 ? 0 : rdl;
 	glm::vec3 specular = lightIntensity * specCol * powf(rdl, SpecularPower);
-
+	// return lightIntensity;
 	return diffuse + specular;
 }
 
@@ -229,9 +229,10 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		}
 	}
 
-	float f = fresnel(rayDir, interpolated.normal, 1.35f);
+	// float f = fresnel(rayDir, interpolated.normal, 1.35f);
+	// glm::vec3 env = environment->sampleEnvironment(reflectDir) * f;
 
-	return render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights) + environment->sampleEnvironment(reflectDir) * f;
+	return render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
 }
 
 void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
@@ -286,24 +287,25 @@ Colour Camera::renderTracedGouraud(int x, int y, std::vector<Model *> &models, s
 	return vectorToColour(v0 * w + v1 * u + v2 * v);
 }
 
-KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light> &lights, int iterations, float materialAbsorbProbability)
+KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light> &lights, int iterations, float reflectMultiplier, glm::vec3 &biasPosition, float biasAmount, float intensity)
 {
 	std::cout << "K Neighbours " << K_NEIGHBOURS << std::endl;
 	std::vector<glm::vec3> *positions = new std::vector<glm::vec3>();
 	std::vector<Photon> *intensities = new std::vector<Photon>();
 	Photon photon;
+	glm::vec3 biasDirection = glm::normalize(biasPosition - lights[0].position) * biasAmount;
 
 	for (int i = 0; i < iterations; i++)
 	{
 		Light &light = lights[(int)fmod(i, lights.size())];
-		glm::vec3 dir = glm::normalize(glm::vec3((float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f));
+		glm::vec3 dir = glm::normalize(biasDirection + glm::vec3((float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f));
 		RayTriangleIntersection intersection = RayTriangleIntersection();
 		glm::vec3 origin = light.position;
 		glm::vec3 lightIntensity = light.colour / (float)iterations;
-		float absorbProbability = 0;
+		float reflectProbability = 1;
 		int bounces = 0;
 
-		while (((float)(rand()) / RAND_MAX >= absorbProbability && bounces <= MaxBounces) || bounces <= 1)
+		while (((float)(rand()) / RAND_MAX <= reflectProbability && bounces <= MaxBounces))
 		{
 			intersection = getClosestIntersection(origin, dir, models, intersection.triangleIndex);
 			if (intersection.modelIndex == -1)
@@ -331,8 +333,10 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 			origin = intersection.intersectionPoint;
 			if (material->refract || material->mirror)
 			{
+				float metallic = material->metallic;
+				glm::vec3 specCol = glm::normalize(albedo);
 				float f = fresnel(dir, interpolated.normal, material->refractiveIndex);
-				lightIntensity *= albedo;
+				lightIntensity *= (metallic * specCol + glm::vec3(1,1,1) * (1 - metallic));
 				if (material->mirror || ((float)(rand()) / RAND_MAX <= f))
 				{
 					dir = glm::reflect(dir, interpolated.normal);
@@ -341,13 +345,13 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 				{
 					dir = refract(dir, interpolated.normal, material->refractiveIndex);
 				}
-				absorbProbability = 0;
+				reflectProbability = 1;
 			}
 			else
 			{
 				if (bounces > 0)
 				{
-					photon.intensity = lightIntensity;
+					photon.intensity = lightIntensity * intensity;
 					photon.dir = dir;
 					positions->push_back(intersection.intersectionPoint);
 					intensities->push_back(photon);
@@ -357,17 +361,20 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 				float f = fresnel(dir, interpolated.normal, 1.35) + metallic;
 				if ((float)(rand()) / RAND_MAX <= f)
 				{
+
 					glm::vec3 specCol = glm::normalize(albedo);
 					dir = glm::reflect(dir, interpolated.normal) * (metallic * specCol + glm::vec3(1,1,1) * (1 - metallic));
+					reflectProbability = reflectMultiplier * (specCol.x + specCol.y + specCol.z) / 3; 
 				}
 				else
 				{
 					//diffuse
 					dir = glm::normalize(interpolated.normal * ((float)(rand()) / RAND_MAX) + interpolated.binormal * ((float)(rand()) / RAND_MAX - 0.5f) + interpolated.tangent * ((float)(rand()) / RAND_MAX - 0.5f));
 					lightIntensity *= albedo;
+					reflectProbability = reflectMultiplier * (albedo.x + albedo.y + albedo.z) / 3;
 				}
 
-				absorbProbability = materialAbsorbProbability;
+
 			}
 
 			bounces++;
@@ -388,7 +395,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.3f;
+	colour *= 0.4f;
 }
 
 glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap, int currentDepth, int ignoreIndex)
