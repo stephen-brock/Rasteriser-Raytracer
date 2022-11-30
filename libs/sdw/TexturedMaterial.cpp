@@ -4,7 +4,7 @@
 
 TexturedMaterial::TexturedMaterial() = default;
 
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, float spec, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength)
 {
     this->colour = colour;
     this->metallic = metallic;
@@ -13,8 +13,9 @@ TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, bool mirror
     this->textureMap = new TextureMap(texpath);
     this->normalMap = new TextureMap(normalPath);
     this->normalStrength = normalStrength;
+    this->spec = spec;
 }
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, float spec, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength)
 {
     this->colour = colour;
     this->metallic = metallic;
@@ -24,6 +25,7 @@ TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, bool refrac
     this->refractiveIndex = refractiveIndex;
     this->normalMap = new TextureMap(normalPath);
     this->normalStrength = normalStrength;
+    this->spec = spec;
 }
 
 glm::vec3 TexturedMaterial::sampleAlbedo(float u, float v)

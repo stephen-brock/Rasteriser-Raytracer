@@ -362,7 +362,7 @@ int main(int argc, char *argv[]) {
 	// lights.push_back(Light(glm::vec3(0.0f, .2f, .1f), glm::vec3(400,0,0)));
 	// lights.push_back(Light(glm::vec3(0.2f, 0.2f, -.1f), glm::vec3(0,400,0)));
 	// lights.push_back(Light(glm::vec3(-0.2f, 0.2f, -.1f), glm::vec3(0,0,400)));
-	lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(2000,2000,2000)));
+	lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
 	// createSoftLight(lights, glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400), 3, 2, 0.05f, 1);
 	float time = 28;
 	auto cameraToWorld = matrixTRS(glm::vec3(0.,-0.2f,0.9f), glm::vec3(0,0,M_PI));

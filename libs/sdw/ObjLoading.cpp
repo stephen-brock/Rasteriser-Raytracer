@@ -122,6 +122,8 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 			getline(file, line);
 			float metallic = std::stof(stringRange(line, 9, line.length()));
 			getline(file, line);
+			float spec = std::stof(stringRange(line, 5, line.length()));
+			getline(file, line);
 			if (line[0] == 'm')
 			{
 				mirror = true;
@@ -142,11 +144,11 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 				float normalStrength = std::stof(stringRange(line, 4, line.length()));
 				if (refract)
 				{
-					materials[name] = new TexturedMaterial(colour, metallic, refract, refractiveIndex, texpath, nrmpath, normalStrength);
+					materials[name] = new TexturedMaterial(colour, metallic, spec, refract, refractiveIndex, texpath, nrmpath, normalStrength);
 				}
 				else 
 				{
-					materials[name] = new TexturedMaterial(colour, metallic, mirror, texpath, nrmpath, normalStrength);
+					materials[name] = new TexturedMaterial(colour, metallic, spec, mirror, texpath, nrmpath, normalStrength);
 				}
 				
 			}
@@ -154,11 +156,11 @@ void loadMtl(std::unordered_map<std::string, Material*> &materials, std::string 
 			{
 				if (refract)
 				{
-					materials[name] = new Material(colour, metallic, refract, refractiveIndex);
+					materials[name] = new Material(colour, metallic, spec, refract, refractiveIndex);
 				}
 				else 
 				{
-					materials[name] = new Material(colour, metallic, mirror);
+					materials[name] = new Material(colour, metallic, spec, mirror);
 				}
 			}
 		}

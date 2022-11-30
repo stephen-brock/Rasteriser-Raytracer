@@ -12,8 +12,8 @@ class TexturedMaterial : public Material
         float normalStrength;
         glm::vec3 sampleAlbedo(float u, float v) override;
         TexturedMaterial();
-        TexturedMaterial(glm::vec3 colour, float metallic, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength);
-        TexturedMaterial(glm::vec3 colour, float metallic, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength);
+        TexturedMaterial(glm::vec3 colour, float metallic, float spec, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength);
+        TexturedMaterial(glm::vec3 colour, float metallic, float spec, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength);
         void transformNormal(glm::vec3 &normal, glm::vec3 &binormal, glm::vec3 &tangent, float u, float v) override;
         ~TexturedMaterial();
         

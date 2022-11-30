@@ -9,7 +9,6 @@
 
 const int MaxRayDepth = 3;
 const int MaxBounces = 8;
-const float SpecularPower = 64;
 
 Camera::Camera()
 {
@@ -90,7 +89,7 @@ bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<Model *
 	return false;
 }
 
-glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, glm::vec3 &specCol, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights)
+glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, float spec, glm::vec3 &specCol, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights)
 {
 	glm::vec3 lightIntensity = glm::vec3(0, 0, 0);
 	// glm::vec3 ambientIntensity = glm::vec3(0.1f,0.f,0.2f);
@@ -101,7 +100,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, glm::vec3 &specCol, 
 		{
 			glm::vec3 lightCol = lights[i].colour * lights[i].lightAttenuation(lightDir);
 			lightDir = glm::normalize(lightDir);
-			lightIntensity += lightSurface(albedo, metallic, specCol, rayDir, normal, lightDir, lightCol);
+			lightIntensity += lightSurface(albedo, metallic, spec, specCol, rayDir, normal, lightDir, lightCol);
 		}
 	}
 
@@ -109,7 +108,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, glm::vec3 &specCol, 
 	return lightIntensity;
 }
 
-glm::vec3 Camera::lightSurface(glm::vec3 &albedo, float metallic, glm::vec3 &specCol, glm::vec3 &rayDir, glm::vec3 &normal, glm::vec3 &lightDir, glm::vec3 &lightIntensity)
+glm::vec3 Camera::lightSurface(glm::vec3 &albedo, float metallic, float spec, glm::vec3 &specCol, glm::vec3 &rayDir, glm::vec3 &normal, glm::vec3 &lightDir, glm::vec3 &lightIntensity)
 {
 	float ldn = glm::dot(lightDir, normal);
 	ldn = ldn < 0 ? 0 : ldn;
@@ -117,7 +116,7 @@ glm::vec3 Camera::lightSurface(glm::vec3 &albedo, float metallic, glm::vec3 &spe
 	glm::vec3 refl = glm::reflect(rayDir, normal);
 	float rdl = glm::dot(lightDir, refl);
 	rdl = rdl <= 0 ? 0 : rdl;
-	glm::vec3 specular = lightIntensity * specCol * powf(rdl, SpecularPower);
+	glm::vec3 specular = lightIntensity * specCol * powf(rdl, spec);
 	// return lightIntensity;
 	return diffuse + specular;
 }
@@ -219,13 +218,13 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo;
-			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 			return surface + renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * (1 - f) + reflectCol * f;
 		}
 		else if (model.material->mirror)
 		{
 			float f = fresnel(rayDir, interpolated.normal, 1.35f);
-			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 			return surface * (1 - f) + renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * f;
 		}
 	}
@@ -233,7 +232,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	// float f = fresnel(rayDir, interpolated.normal, 1.35f);
 	// glm::vec3 env = environment->sampleEnvironment(reflectDir) * f;
 
-	return render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+	return render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 }
 
 void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
@@ -260,7 +259,7 @@ void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> 
 
 			glm::vec3 specCol = glm::normalize(albedo);
 
-			vertexColours[m][i] = render(albedo, model.material->metallic, specCol, vert.normal, intersection, rayDir, models, lights);
+			vertexColours[m][i] = render(albedo, model.material->metallic, model.material->spec, specCol, vert.normal, intersection, rayDir, models, lights);
 		}
 	}
 }
@@ -393,7 +392,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.7f;
+	colour *= 0.4f;
 }
 
 glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap, int currentDepth, int ignoreIndex)
@@ -431,12 +430,12 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 		{
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * specCol;
-			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights) * albedo;
+			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights) * albedo;
 			return surface + renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) * specCol + reflectCol * f;
 		}
 		else if (material->mirror)
 		{
-			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 			return surface + renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * specCol;
 		}
 	}
@@ -457,11 +456,11 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 		float rdl = glm::dot(-colours[i].dir, refl);
 		rdl = rdl <= 0 ? 0 : rdl;
 		colour += (colours[i].intensity * (float)fmax(0, dot)) * dst;
-		specColour += colours[i].intensity * powf(rdl, SpecularPower) * dst;
+		specColour += colours[i].intensity * powf(rdl, material->spec) * dst;
 	}
 	colour /= areaOfSphere * 0.33f;
 
-	glm::vec3 direct = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+	glm::vec3 direct = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 	// specColour += environment->sampleEnvironment(reflectDir) * f;
 
 	return direct + (colour * albedo) + specColour * specCol;
