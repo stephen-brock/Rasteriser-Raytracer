@@ -1,24 +1,27 @@
 newmtl Grey
 Kd 0.700000 0.700000 0.700000
-
-newmtl Water
-Kd 1.000000 1.000000 1.000000
-refract 1.33
-
-newmtl Sand
-Kd 1.000000 1.000000 1.000000
-tex /Users/smb/Desktop/Graphics-Coursework/src/Ground054_1K-JPG/Sand_albedo.ppm
-nrm /Users/smb/Desktop/Graphics-Coursework/src/Ground054_1K-JPG/Sand_nrm.ppm
-str 0.3
+metallic 0.0
 
 newmtl Logo
-Kd 1.000000 0.000000 0.000000
+Kd 0.800000 0.800000 0.800000
+metallic 0.9
+refract 1.51
 
 newmtl Floor
 Kd 1.000000 1.000000 1.000000
+metallic 0.0
 tex /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Albedo.ppm
 nrm /Users/smb/Desktop/Graphics-Coursework/src/Tiles036_1K-JPG/Tiles_Nrm.ppm
 str 0.5
 
-newmtl Walls
-Kd 0.100000 0.800000 0.800000
+newmtl Red
+Kd 0.800000 0.000000 0.000000
+metallic 1.0
+
+newmtl Green
+Kd 0.800000 0.000000 0.000000
+metallic 1.0
+
+newmtl Blue
+Kd 0.800000 0.000000 0.000000
+metallic 1.0

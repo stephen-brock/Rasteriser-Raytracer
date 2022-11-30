@@ -8,7 +8,7 @@
 #include <iostream>
 
 const int MaxRayDepth = 4;
-const int MaxBounces = 5;
+const int MaxBounces = 4;
 
 Camera::Camera()
 {
@@ -116,7 +116,7 @@ glm::vec3 Camera::lightSurface(glm::vec3 &albedo, float metallic, glm::vec3 &spe
 	glm::vec3 refl = glm::reflect(rayDir, normal);
 	float rdl = glm::dot(lightDir, refl);
 	rdl = rdl <= 0 ? 0 : rdl;
-	glm::vec3 specular = lightIntensity * (specCol * metallic + (1 - metallic) * glm::vec3(1,1,1)) * powf(rdl, 8);
+	glm::vec3 specular = lightIntensity * (specCol * metallic + (1 - metallic) * glm::vec3(1,1,1)) * powf(rdl, 16);
 
 	return diffuse + specular;
 }
@@ -298,7 +298,7 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 		glm::vec3 dir = glm::normalize(glm::vec3((float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f, (float)(rand()) / RAND_MAX - 0.5f));
 		RayTriangleIntersection intersection = RayTriangleIntersection();
 		glm::vec3 origin = light.position;
-		glm::vec3 lightIntensity = light.colour * (1 - materialAbsorbProbability) / (float)iterations;
+		glm::vec3 lightIntensity = light.colour / (float)iterations;
 		float absorbProbability = 0;
 		int bounces = 0;
 
@@ -386,7 +386,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.1f;
+	colour *= 0.05f;
 }
 
 glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap, int currentDepth, int ignoreIndex)
@@ -448,7 +448,7 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 		float rdl = glm::dot(-colours[i].dir, refl);
 		rdl = rdl <= 0 ? 0 : rdl;
 		colour += (colours[i].intensity * (float)fmax(0, dot)) * dst;
-		specColour += colours[i].intensity * powf(rdl, 8) * dst;
+		specColour += colours[i].intensity * powf(rdl, 16) * dst;
 	}
 	colour /= areaOfSphere * 0.33f;
 
