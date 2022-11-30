@@ -8,7 +8,7 @@
 #include <iostream>
 
 const int MaxRayDepth = 3;
-const int MaxBounces = 6;
+const int MaxBounces = 8;
 const float SpecularPower = 64;
 
 Camera::Camera()
@@ -358,13 +358,13 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 				}
 
 				float metallic = material->metallic;
-				float f = fresnel(dir, interpolated.normal, 1.35) + metallic;
-				if ((float)(rand()) / RAND_MAX <= f)
+				if ((float)(rand()) / RAND_MAX <= (0.5f + metallic))
 				{
 
 					glm::vec3 specCol = glm::normalize(albedo);
-					dir = glm::reflect(dir, interpolated.normal) * (metallic * specCol + glm::vec3(1,1,1) * (1 - metallic));
+					dir = glm::reflect(dir, interpolated.normal);
 					reflectProbability = reflectMultiplier * (specCol.x + specCol.y + specCol.z) / 3; 
+					lightIntensity *= (metallic * specCol + glm::vec3(1,1,1) * (1 - metallic));
 				}
 				else
 				{
