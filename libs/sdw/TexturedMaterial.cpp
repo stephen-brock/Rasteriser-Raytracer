@@ -4,18 +4,20 @@
 
 TexturedMaterial::TexturedMaterial() = default;
 
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, bool mirror, std::string &texpath, std::string &normalPath, float normalStrength)
 {
     this->colour = colour;
+    this->metallic = metallic;
     this->mirror = mirror;
     this->refract = false;
     this->textureMap = new TextureMap(texpath);
     this->normalMap = new TextureMap(normalPath);
     this->normalStrength = normalStrength;
 }
-TexturedMaterial::TexturedMaterial(glm::vec3 colour, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength)
+TexturedMaterial::TexturedMaterial(glm::vec3 colour, float metallic, bool refract, float refractiveIndex, std::string &texpath, std::string &normalPath, float normalStrength)
 {
     this->colour = colour;
+    this->metallic = metallic;
     this->mirror = mirror;
     this->refract = refract;
     this->textureMap = new TextureMap(texpath);

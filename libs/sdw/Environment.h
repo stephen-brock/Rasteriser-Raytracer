@@ -6,9 +6,10 @@ class Environment
 {
     public:
         Environment();
-        Environment(std::string texPath);
+        Environment(std::string texPath, glm::vec3 colour);
         glm::vec3 sampleEnvironment(glm::vec3 &rayDir);
         ~Environment();
     private:
      TextureMap* textureMap;
+     glm::vec3 colour;
 };

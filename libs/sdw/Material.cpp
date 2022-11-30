@@ -3,23 +3,26 @@
 
 Material::Material() = default;
 
-Material::Material(glm::vec3 colour)
+Material::Material(glm::vec3 colour, float metallic)
 {
     this->colour = colour;
     this->mirror = false;
     this->refract = false;
+    this->metallic = metallic;
 }
-Material::Material(glm::vec3 colour, bool mirror)
+Material::Material(glm::vec3 colour, float metallic, bool mirror)
 {
     this->colour = colour;
     this->mirror = mirror;
     this->refract = false;
+    this->metallic = metallic;
 }
-Material::Material(glm::vec3 colour, bool refract, float refractiveIndex)
+Material::Material(glm::vec3 colour, float metallic, bool refract, float refractiveIndex)
 {
     this->colour = colour;
     this->mirror = false;
     this->refract = refract;
+    this->metallic = metallic;
     this->refractiveIndex = refractiveIndex;
 }
 

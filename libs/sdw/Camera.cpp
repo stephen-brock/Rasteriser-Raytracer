@@ -89,7 +89,7 @@ bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<Model *
 	return false;
 }
 
-glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights)
+glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, glm::vec3 &specCol, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights)
 {
 	glm::vec3 lightIntensity = glm::vec3(0, 0, 0);
 	// glm::vec3 ambientIntensity = glm::vec3(0.1f,0.f,0.2f);
@@ -100,7 +100,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 		{
 			glm::vec3 lightCol = lights[i].colour * lights[i].lightAttenuation(lightDir);
 			lightDir = glm::normalize(lightDir);
-			lightIntensity += lightSurface(albedo, rayDir, normal, lightDir, lightCol);
+			lightIntensity += lightSurface(albedo, metallic, specCol, rayDir, normal, lightDir, lightCol);
 		}
 	}
 
@@ -108,15 +108,15 @@ glm::vec3 Camera::render(glm::vec3 &albedo, glm::vec3 &normal, RayTriangleInters
 	return lightIntensity;
 }
 
-glm::vec3 Camera::lightSurface(glm::vec3 &albedo, glm::vec3 &rayDir, glm::vec3 &normal, glm::vec3 &lightDir, glm::vec3 &lightIntensity)
+glm::vec3 Camera::lightSurface(glm::vec3 &albedo, float metallic, glm::vec3 &specCol, glm::vec3 &rayDir, glm::vec3 &normal, glm::vec3 &lightDir, glm::vec3 &lightIntensity)
 {
 	float ldn = glm::dot(lightDir, normal);
 	ldn = ldn < 0 ? 0 : ldn;
-	glm::vec3 diffuse = lightIntensity * ldn * albedo;
+	glm::vec3 diffuse = lightIntensity * ldn * albedo * (1 - metallic);
 	glm::vec3 refl = glm::reflect(rayDir, normal);
 	float rdl = glm::dot(lightDir, refl);
 	rdl = rdl <= 0 ? 0 : rdl;
-	glm::vec3 specular = lightIntensity * powf(rdl, 8);
+	glm::vec3 specular = lightIntensity * (specCol * metallic + (1 - metallic) * glm::vec3(1,1,1)) * powf(rdl, 8);
 
 	return diffuse + specular;
 }
@@ -208,29 +208,29 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 	material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);
 
 	glm::vec3 albedo = material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y);
+	glm::vec3 specCol = glm::normalize(albedo);
+	glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
 	if (currentDepth < MaxRayDepth)
 	{
 		if (model.material->refract)
 		{
 			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
-			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
 			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo;
-			glm::vec3 a = glm::vec3(0,0,0);
-			glm::vec3 surface = render(a, interpolated.normal, intersection, rayDir, models, lights);
-			reflectCol += surface;
-			return renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * (1 - f) + reflectCol * f;
+			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			return surface + renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * (1 - f) + reflectCol * f;
 		}
 		else if (model.material->mirror)
 		{
 			float f = fresnel(rayDir, interpolated.normal, 1.35f);
-			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
-			glm::vec3 surface = render(albedo, interpolated.normal, intersection, rayDir, models, lights);
+			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
 			return surface * (1 - f) + renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * f;
 		}
 	}
 
-	return render(albedo, interpolated.normal, intersection, rayDir, models, lights);
+	float f = fresnel(rayDir, interpolated.normal, 1.35f);
+
+	return render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights) + environment->sampleEnvironment(reflectDir) * f;
 }
 
 void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
@@ -255,7 +255,9 @@ void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> 
 			RayTriangleIntersection intersection = RayTriangleIntersection(vert.pos, -1, -1, m);
 			glm::vec3 albedo = model.material->sampleAlbedo(vert.normal.x, vert.normal.y);
 
-			vertexColours[m][i] = render(albedo, vert.normal, intersection, rayDir, models, lights);
+			glm::vec3 specCol = glm::normalize(albedo);
+
+			vertexColours[m][i] = render(albedo, model.material->metallic, specCol, vert.normal, intersection, rayDir, models, lights);
 		}
 	}
 }
@@ -349,10 +351,12 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 					intensities->push_back(photon);
 				}
 
-				float f = fresnel(dir, interpolated.normal, 1.35);
+				float metallic = material->metallic;
+				float f = fresnel(dir, interpolated.normal, 1.35) + metallic;
 				if ((float)(rand()) / RAND_MAX <= f)
 				{
-					dir = glm::reflect(dir, interpolated.normal);
+					glm::vec3 specCol = glm::normalize(material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y));
+					dir = glm::reflect(dir, interpolated.normal) * (metallic * specCol + glm::vec3(1,1,1) * (1 - metallic));
 				}
 				else
 				{
@@ -382,7 +386,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.2f;
+	colour *= 0.1f;
 }
 
 glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap, int currentDepth, int ignoreIndex)
@@ -408,20 +412,23 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	interpolateVertexData(v0, v1, v2, interpolated, u, v);
 	material->transformNormal(interpolated.normal, interpolated.binormal, interpolated.tangent, interpolated.texcoord.x, interpolated.texcoord.y);
 
+	glm::vec3 albedo = material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y);
+	glm::vec3 specCol = glm::normalize(albedo);
+	float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
+	glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
 	if (currentDepth <= MaxRayDepth)
 	{
 		if (material->refract)
 		{
-			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
-			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
 			glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
-			return renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) + reflectCol * f;
+			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			return surface + renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) + reflectCol * f;
 		}
 		else if (material->mirror)
 		{
-			glm::vec3 reflectDir = glm::reflect(rayDir, interpolated.normal);
-			return renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
+			glm::vec3 surface = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			return surface + renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex);
 		}
 	}
 
@@ -445,10 +452,10 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	}
 	colour /= areaOfSphere * 0.33f;
 
-	glm::vec3 albedo = material->sampleAlbedo(interpolated.texcoord.x, interpolated.texcoord.y);
-	glm::vec3 direct = render(albedo, interpolated.normal, intersection, rayDir, models, lights);
+	glm::vec3 direct = render(albedo, material->metallic, specCol, interpolated.normal, intersection, rayDir, models, lights);
+	specColour += environment->sampleEnvironment(reflectDir) * f;
 
-	return direct + colour * albedo + specColour;
+	return direct + (colour * albedo) + specColour * (specCol * material->metallic + glm::vec3(1,1,1) * (1 - material->metallic));
 }
 
 Colour Camera::renderTracedBaked(int x, int y, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap)

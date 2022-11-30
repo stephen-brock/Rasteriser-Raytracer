@@ -350,14 +350,14 @@ int main(int argc, char *argv[]) {
 
 	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
-	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/dancing_hall_1k.ppm"); 
+	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/dancing_hall_1k.ppm", glm::vec3(0.2f, 0.2f, 0.2f)); 
 
 	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
 	loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
 	// loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.35f);
 	std::vector<Light> lights = std::vector<Light>();
-	lights.push_back(Light(glm::vec3(0.2f, 0.f, 1.0f), glm::vec3(700,700,700)));
+	lights.push_back(Light(glm::vec3(0.0f, 0.f, .25f), glm::vec3(700,700,700)));
 	// createSoftLight(lights, glm::vec3(-.1f, 0.6f, 0.3f), glm::vec3(800,800,800), 3, 2, 0.05f, 1);
 	float time = 0;
 	auto cameraToWorld = matrixTRS(glm::vec3(0,-0.7f,2.0f), glm::vec3(0,0,M_PI));
@@ -386,7 +386,7 @@ int main(int argc, char *argv[]) {
 		time += 1.0f;
 		// glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
 		glm::vec3 orbit = glm::vec3(0,0,0);
-		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(time * 0.05f) * 2.3f, -0.3f,cos(time * 0.05f) * 2.3f), glm::vec3(0,0,M_PI));
+		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(time * 0.05f) * 2.5f, -0.3f,cos(time * 0.05f) * 2.5f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
 		// models->at(0)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
