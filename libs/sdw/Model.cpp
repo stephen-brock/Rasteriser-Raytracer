@@ -86,13 +86,29 @@ void Model::Displace(TextureMap &amp, TextureMap &nrm, glm::vec2 offset, float s
 
 void Model::TransformVerticies()
 {
+    float minX = 100000;
+    float maxX = -100000;
+    float minY = 100000;
+    float maxY = -100000;
+    float minZ = 100000;
+    float maxZ = -100000;
     for (int i = 0; i < verts->size(); i++)
     {
-        transformedVerts->at(i).pos = glm::vec3(glm::vec4(verts->at(i).pos, 1.0f) * transform);
+        glm::vec3 pos = glm::vec3(glm::vec4(verts->at(i).pos, 1.0f) * transform);
+        transformedVerts->at(i).pos = pos;
+        minX = fmin(minX, pos.x);
+        maxX = fmax(maxX, pos.x);
+        minY = fmin(minY, pos.y);
+        maxY = fmax(maxY, pos.y);
+        minZ = fmin(minZ, pos.z);
+        maxZ = fmax(maxZ, pos.z);
         transformedVerts->at(i).normal = glm::vec3(glm::vec4(verts->at(i).normal, 0.0f) * transform);
         transformedVerts->at(i).binormal = glm::vec3(glm::vec4(verts->at(i).binormal, 0.0f) * transform);
         transformedVerts->at(i).tangent = glm::vec3(glm::vec4(verts->at(i).tangent, 0.0f) * transform);
     }
+
+    boundingBox = BoundingBox(glm::vec3(minX, minY, minZ), glm::vec3(maxX, maxY, maxZ));
+    std::cout << minX << " " << maxX << std::endl;
 }
 
 Model::~Model()

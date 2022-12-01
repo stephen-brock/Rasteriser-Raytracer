@@ -53,6 +53,10 @@ RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 &origin, glm::v
 	for (int m = 0; m < models.size(); m++)
 	{
 		Model &model = *models[m];
+		if (!model.box.Hit(origin, rayDirection))
+		{
+			continue;
+		}
 
 		for (int i = 0; i < model.triangles->size(); i++)
 		{

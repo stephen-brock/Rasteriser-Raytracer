@@ -4,6 +4,7 @@
 #include "ModelVertex.h"
 #include "Material.h"
 #include "TextureMap.h"
+#include "BoundingBox.h"
 
 class Model
 {
@@ -12,6 +13,7 @@ class Model
         std::vector<ModelTriangle> *triangles;
         Material* material;
         glm::mat4 transform;
+        BoundingBox boundingBox;
         Model();
         ~Model();
         Model(Material* material);
