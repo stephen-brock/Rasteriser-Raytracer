@@ -16,7 +16,6 @@
 #include <MatrixUtils.h>
 #include <ObjLoading.h>
 #include <Light.h>
-#include <future>
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -405,17 +404,14 @@ int main(int argc, char *argv[]) {
 
 	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
-	Environment* environment = new Environment("/Users/smb/Desktop/Graphics-Coursework/src/dancing_hall_1k.ppm", glm::vec3(0.f, 0.f, 0.f)); 
+	Environment* environment = new Environment("./src/dancing_hall_1k.ppm", glm::vec3(0.f, 0.f, 0.f)); 
 
-	loadMtl(*materials, "/Users/smb/Desktop/Graphics-Coursework/src/scene.mtl");
+	loadMtl(*materials, "./src/scene.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
-	// loadObjOld(*models, "/Users/smb/Desktop/Graphics-Coursework/src/cornell-box.obj", *materials, 0.35f);
-	loadObj(*models, "/Users/smb/Desktop/Graphics-Coursework/src/scene.obj", *materials, 0.35f);
+	// loadObjOld(*models, "./src/cornell-box.obj", *materials, 0.35f);
+	loadObj(*models, "./src/scene.obj", *materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
-	// lights.push_back(Light(glm::vec3(0.0f, .2f, .1f), glm::vec3(400,0,0)));
-	// lights.push_back(Light(glm::vec3(0.2f, 0.2f, -.1f), glm::vec3(0,400,0)));
-	// lights.push_back(Light(glm::vec3(-0.2f, 0.2f, -.1f), glm::vec3(0,0,400)));
 	lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
 	// createSoftLight(lights, glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400), 3, 2, 0.05f, 1);
 	float time = 28;
@@ -432,12 +428,13 @@ int main(int argc, char *argv[]) {
 			depthBuffer[i][j] = 0;
 		}
 	}
+		for (int i = 0; i < models->size(); i++)
+	{
+		models->at(i)->TransformVerticies();
+	}
 
 	bool rendered = false;
 	int frame = 0;
-
-	// TextureMap displacement = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture.ppm");
-	// TextureMap normal = TextureMap("/Users/smb/Desktop/Graphics-Coursework/src/texture_nrm.ppm");
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
@@ -448,12 +445,6 @@ int main(int argc, char *argv[]) {
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
 		time += 1.0f;
-		// models->at(0)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
-		for (int i = 0; i < models->size(); i++)
-		{
-			models->at(i)->TransformVerticies();
-		}
-		// models->at(6)->Displace(displacement, normal, glm::vec2(0, time * 0.0000325f), 0.1f);
 		
 		lights[0].position = WindowPosition + glm::vec3(cos(time * 0.05f) * 3.0f, 1.0f + sin(time * 0.02f) * 0.5f, 5.0f + fabs(sin(time * 0.0f)));
 		if (renderMode == 0)

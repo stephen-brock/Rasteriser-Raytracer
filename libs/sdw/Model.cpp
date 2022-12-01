@@ -108,7 +108,6 @@ void Model::TransformVerticies()
     }
 
     boundingBox = BoundingBox(glm::vec3(minX, minY, minZ), glm::vec3(maxX, maxY, maxZ));
-    std::cout << minX << " " << maxX << std::endl;
 }
 
 Model::~Model()

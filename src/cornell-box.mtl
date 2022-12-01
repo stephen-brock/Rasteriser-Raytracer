@@ -14,8 +14,8 @@ refract 1.45
 newmtl Green
 Kd 1.000000 1.000000 1.000000
 metallic 0.0
-tex /Users/smb/Desktop/Graphics-Coursework/src/texture.ppm
-nrm /Users/smb/Desktop/Graphics-Coursework/src/texture_nrm.ppm
+tex ./src/texture.ppm
+nrm ./src/texture_nrm.ppm
 str 0.25
 
 newmtl Blue
