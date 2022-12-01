@@ -10,6 +10,7 @@
 const int MaxRayDepth = 3;
 const int MaxBounces = 8;
 const float ImageSize = 5000;
+const float Exposure = 0.25f;
 
 Camera::Camera()
 {
@@ -229,10 +230,10 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		}
 	}
 
-	// float f = fresnel(rayDir, interpolated.normal, 1.35f);
-	// glm::vec3 env = environment->sampleEnvironment(reflectDir) * f;
+	float f = fresnel(rayDir, interpolated.normal, 1.35f);
+	glm::vec3 env = environment->sampleEnvironment(reflectDir) * f * material->metallic * specCol;
 
-	return render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
+	return render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights) + env;
 }
 
 void Camera::initialiseGouraud(std::vector<Model *> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours)
@@ -392,7 +393,7 @@ void tonemapping(glm::vec3 &colour)
 	colour.x = powf(fmax(0, colour.x), 0.4545);
 	colour.y = powf(fmax(0, colour.y), 0.4545);
 	colour.z = powf(fmax(0, colour.z), 0.4545);
-	colour *= 0.4f;
+	colour *= Exposure;
 }
 
 glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap, int currentDepth, int ignoreIndex)
@@ -461,7 +462,7 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	colour /= areaOfSphere * 0.33f;
 
 	glm::vec3 direct = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
-	// specColour += environment->sampleEnvironment(reflectDir) * f;
+	specColour += environment->sampleEnvironment(reflectDir) * f * material->metallic;
 
 	return direct + (colour * albedo) + specColour * specCol;
 }

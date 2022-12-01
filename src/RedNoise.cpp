@@ -18,8 +18,8 @@
 #include <Light.h>
 #include <future>
 
-#define WIDTH 400
-#define HEIGHT 300
+#define WIDTH 640
+#define HEIGHT 480
 
 const bool GouraudShading = false;
 const glm::vec3 WindowPosition = glm::vec3(0,0.35f,1.2);
@@ -336,7 +336,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 10000, 0.4f, WindowPosition, 10.0f, 0.001f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 2000, 0.4f, WindowPosition, 10.0f, 0.001f);
 
 	for (int i = 0; i < window.width; i++)
 	{
