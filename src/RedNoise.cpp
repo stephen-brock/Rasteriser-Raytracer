@@ -36,25 +36,6 @@ uint32_t colourToInt(Colour colour)
 	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
 }
 
-void drawLine(CanvasPoint from, CanvasPoint to, Colour colour, DrawingWindow &window) 
-{
-	CanvasPoint diff = CanvasPoint(to.x - from.x, to.y - from.y);
-	float numberOfSteps = fmax(fabs(diff.x), fabs(diff.y));
-	CanvasPoint stepSize = CanvasPoint(diff.x / numberOfSteps, diff.y / numberOfSteps);
-	for (int i = 0; i < numberOfSteps; i++)
-	{
-		CanvasPoint p = CanvasPoint(from.x + stepSize.x * i, from.y + stepSize.y * i);
-		window.setPixelColour(p.x, p.y, colourToInt(colour));
-	}
-}
-
-void strokeTriangle(CanvasTriangle triangle, Colour colour, DrawingWindow &window) 
-{
-	drawLine(triangle[0], triangle[1], colour, window);
-	drawLine(triangle[1], triangle[2], colour, window);
-	drawLine(triangle[2], triangle[0], colour, window);
-}
-
 CanvasPoint lerpCanvasPoint(CanvasPoint v1, CanvasPoint v2, float t)
 {
 	float x = v2.x * t + v1.x * (1 - t);
@@ -66,6 +47,79 @@ CanvasPoint lerpCanvasPoint(CanvasPoint v1, CanvasPoint v2, float t)
 	point.texturePoint.y = v2.texturePoint.y * t + v1.texturePoint.y * (1 - t);
 
 	return point;
+}
+
+void drawLine(CanvasPoint from, CanvasPoint to, Colour colour, DrawingWindow &window) 
+{
+	if (from.x > to.x)
+	{
+		std::swap(from, to);
+	}
+
+	if (to.x < 0 || from.x >= window.width)
+	{
+		return;
+	}
+	float difference = to.x - from.x;
+	if (from.x < 0)
+	{
+		float t = -from.x / difference;
+		from = lerpCanvasPoint(from, to, t);
+		from.x = 0;
+	}
+
+	if (to.x >= window.width)
+	{
+		float t = 1 - (to.x - window.width + 1) / difference;
+		to = lerpCanvasPoint(from, to, t);
+		to.x = window.width - 1;
+	}
+	if (from.y > to.y)
+	{
+		std::swap(from, to);
+	}
+
+	if (to.y < 0 || from.y >= window.height)
+	{
+		return;
+	}
+
+	difference = to.y - from.y;
+	if (from.y < 0)
+	{
+		float t = -from.y / difference;
+		from = lerpCanvasPoint(from, to, t);
+		from.y = 0;
+	}
+
+	if (to.y >= window.height)
+	{
+		float t = 1 - (to.y - window.height + 1) / difference;
+		to = lerpCanvasPoint(from, to, t);
+		to.y = window.height - 1;
+	}
+
+	CanvasPoint diff = CanvasPoint(to.x - from.x, to.y - from.y);
+	float numberOfSteps = fmax(fabs(diff.x), fabs(diff.y));
+	CanvasPoint stepSize = CanvasPoint(diff.x / numberOfSteps, diff.y / numberOfSteps);
+	for (int i = 0; i < numberOfSteps; i++)
+	{
+		float t = (float)i / (numberOfSteps - 1);
+		float depth = from.depth * (1 - t) + to.depth * t;
+		if (depth < 0)
+		{
+			continue;
+		}
+		CanvasPoint p = CanvasPoint(from.x + stepSize.x * i, from.y + stepSize.y * i);
+		window.setPixelColour(p.x, p.y, colourToInt(colour));
+	}
+}
+
+void strokeTriangle(CanvasTriangle triangle, Colour colour, DrawingWindow &window) 
+{
+	drawLine(triangle[0], triangle[1], colour, window);
+	drawLine(triangle[1], triangle[2], colour, window);
+	drawLine(triangle[2], triangle[0], colour, window);
 }
 
 CanvasPoint centerPoint(CanvasTriangle sortedTri) 
@@ -149,7 +203,7 @@ void fillHalfTriangle(CanvasTriangle triangle, Material* material, float **depth
 			
 			float d = depthBuffer[i][j];
 			double id = point.depth;
-			if (id > d)
+			if (id > d && id < 1)
 			{
 				uint32_t col = colourToInt(vectorToColour(material->sampleAlbedo(point.texturePoint.x / id, point.texturePoint.y / id)));
 				window.setPixelColour(i, j, col);
@@ -282,7 +336,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 10000, 0.75f, WindowPosition, 8.0f, 0.001f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 10000, 0.4f, WindowPosition, 10.0f, 0.001f);
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -365,8 +419,8 @@ int main(int argc, char *argv[]) {
 	lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
 	// createSoftLight(lights, glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400), 3, 2, 0.05f, 1);
 	float time = 28;
-	auto cameraToWorld = matrixTRS(glm::vec3(0.,-0.2f,0.9f), glm::vec3(0,0,M_PI));
-	camera = Camera(150, cameraToWorld, window.width, window.height, environment);
+	auto cameraToWorld = matrixTRS(glm::vec3(0.,-0.0f,1.0f), glm::vec3(0,0,M_PI));
+	camera = Camera(0.05f, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -378,7 +432,6 @@ int main(int argc, char *argv[]) {
 			depthBuffer[i][j] = 0;
 		}
 	}
-	models->at(1)->transform = matrixTRS(glm::vec3(0,0.0f,0), glm::vec3(0, 0, 0));
 
 	bool rendered = false;
 	int frame = 0;
@@ -390,10 +443,11 @@ int main(int argc, char *argv[]) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
 		// glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
-		glm::vec3 orbit = glm::vec3(0,0.1f,0);
-		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(time * 0.05f) * 1.0f, 0.5f,cos(time * 0.05f) * 1.0f), glm::vec3(0,0,M_PI));
+		glm::vec3 orbit = glm::vec3(.0f,0.1f,.0f);
+		// camera.cameraToWorld = matrixTRS(orbit + glm::vec3(sin(time * 0.01f) * 1.4f, -0.1f,cos(time * 0.01f) * 1.4f), glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 
+		time += 1.0f;
 		// models->at(0)->transform = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, angle, 0));
 		for (int i = 0; i < models->size(); i++)
 		{
@@ -426,7 +480,6 @@ int main(int argc, char *argv[]) {
 			rendered = true;
 			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
 			frame++;
-			time += 1.0f;
 		}
 
 		window.renderFrame();

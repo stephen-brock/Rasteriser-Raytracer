@@ -9,6 +9,7 @@
 
 const int MaxRayDepth = 3;
 const int MaxBounces = 8;
+const float ImageSize = 5000;
 
 Camera::Camera()
 {
@@ -28,18 +29,17 @@ Camera::Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height
 glm::vec3 Camera::getCanvasIntersectionPoint(glm::vec4 vertexPosition)
 {
 	glm::vec4 cPos = vertexPosition * worldToCamera;
-	cPos *= 230.0f;
 	cPos.z = -cPos.z;
-	float u = focalLength * cPos.x / fabs(cPos.z) + width / 2;
-	float v = height / 2 - focalLength * cPos.y / fabs(cPos.z);
+	float u = ImageSize * focalLength * cPos.x / fabs(cPos.z) + width / 2.0f;
+	float v = height / 2.0f - ImageSize * focalLength * cPos.y / fabs(cPos.z);
 
-	return glm::vec3(u, v, cPos.z);
+	return glm::vec3(u, v, cPos.z / focalLength);
 }
 
 glm::vec3 Camera::getRayDirection(float u, float v)
 {
-	float y = (v - (float)height / 2.0) / -focalLength;
-	float x = (u - (float)width / 2.0) / focalLength;
+	float y = (v - (float)height / 2.0) / -(focalLength * ImageSize);
+	float x = (u - (float)width / 2.0) / (focalLength * ImageSize);
 	glm::vec4 localDir = glm::vec4(x, y, -1, 0);
 	glm::vec4 dir = localDir * cameraToWorld;
 	return glm::normalize(glm::vec3(dir));
