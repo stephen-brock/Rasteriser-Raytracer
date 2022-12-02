@@ -437,10 +437,14 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	{
 		if (material->refract)
 		{
-			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * specCol;
 			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
-			return surface + renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) * albedo + reflectCol * f;
+			if (f < 1)
+			{
+				glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
+				return surface * (1 - f) + renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) * albedo + reflectCol * f;
+			}
+			return surface * (1 - f) + reflectCol;
 		}
 		else if (material->mirror)
 		{

@@ -353,7 +353,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 				{
 					float subY = y - SUPER_SAMPLE / 2.0f;
 					
-					sum += camera.renderTraced(i + 0.5f + subX, j + 0.5f + subY, models, lights);
+					sum += camera.renderTracedBaked(i + 0.5f + subX, j + 0.5f + subY, models, lights, photon_map);
 				}
 			}
 			sum /= SUPER_SAMPLE * SUPER_SAMPLE;
@@ -413,6 +413,12 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 	lights.emplace_back(centerPos + glm::vec3(0,-size,0), colour);
 }
 
+void cameraAnimation(glm::vec3 &cameraPosition, glm::vec3 &lookAt, int frame)
+{
+	lookAt = glm::vec3(cos(frame * 0.05f) * 1.0f,0.1f,-.5f);
+	cameraPosition = lookAt + glm::vec3(-cos(frame * 0.05f) * 1.0f, -0.1f,1.5f);
+}
+
 int main(int argc, char *argv[]) {
 	DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 	SDL_Event event;
@@ -454,15 +460,16 @@ int main(int argc, char *argv[]) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
 		// glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
-		glm::vec3 orbit = glm::vec3(cos(frame * 0.05f) * 1.0f,0.1f,-.5f);
-		camera.cameraToWorld = matrixTRS(orbit + glm::vec3(-cos(frame * 0.05f) * 1.0f, -0.1f,1.5f), glm::vec3(0,0,M_PI));
+		glm::vec3 orbit = glm::vec3(0,0,0);
+		glm::vec3 camPos = glm::vec3(0,0,0);
+		cameraAnimation(camPos, orbit, frame);
+		camera.cameraToWorld = matrixTRS(camPos, glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 		
 		frame++;
 
-		// lights[0].position = WindowPosition + glm::vec3(cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f)));
 		lights.clear();
-		createSoftLight(lights, WindowPosition + glm::vec3(cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f))), glm::vec3(20000,20000,20000), 3, 2, 0.15f, 2);
+		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f))), glm::vec3(20000,20000,20000), 3, 2, 0.15f, 2);
 
 		if (renderMode == 0)
 		{
