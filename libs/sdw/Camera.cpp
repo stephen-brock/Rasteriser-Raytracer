@@ -9,7 +9,7 @@
 
 const int MaxRayDepth = 3;
 const int MaxBounces = 10;
-const float ImageSize = 5000;
+const float ImageSize = 50;
 const float Exposure = 0.25f;
 
 Camera::Camera()
@@ -29,9 +29,9 @@ Camera::Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height
 
 glm::vec3 Camera::getCanvasIntersectionPoint(glm::vec4 vertexPosition)
 {
-	glm::vec4 cPos = vertexPosition * worldToCamera;
-	float u = ImageSize * focalLength * cPos.x / (cPos.z) + width / 2.0f;
-	float v = ImageSize * focalLength * cPos.y / (cPos.z) + height / 2.0f;
+	glm::vec4 cPos = worldToCamera * vertexPosition;
+	float u = ImageSize * focalLength * cPos.x / fabs(cPos.z) + width / 2.0f;
+	float v = height / 2.0f - ImageSize * focalLength * cPos.y / fabs(cPos.z);
 
 	return glm::vec3(u, v, -cPos.z);
 }

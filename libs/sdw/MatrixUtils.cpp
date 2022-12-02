@@ -3,7 +3,7 @@
 
 glm::vec4 posFromMatrix(glm::mat4 mat)
 {
-	return glm::vec4(mat[0][3], mat[1][3], mat[2][3], 1);
+	return glm::vec4(mat[3][0], mat[3][1], mat[3][2], 1);
 }
 
 
@@ -39,9 +39,9 @@ glm::mat4 zRotation(glm::mat4 mat, float angle)
 
 glm::mat4 move(glm::mat4 mat, glm::vec3 add)
 {
-	mat[0][3] += add.x;
-	mat[1][3] += add.y;
-	mat[2][3] += add.z;
+	mat[3][0] += add.x;
+	mat[3][1] += add.y;
+	mat[3][2] += add.z;
 
 	return mat;
 }
@@ -73,7 +73,7 @@ glm::mat4 lookAt(glm::mat4 mat, glm::vec3 origin)
 		0,0,0,1
 		);
 
-	return newMat;
+	return glm::transpose(newMat);
 }
 
 

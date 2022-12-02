@@ -35,11 +35,11 @@ uint32_t colourToInt(Colour colour)
 	return 255 << 24 | colour.red << 16 | colour.green << 8 | colour.blue;
 }
 
-CanvasPoint lerpCanvasPoint(CanvasPoint v1, CanvasPoint v2, float t)
+CanvasPoint lerpCanvasPoint(CanvasPoint v1, CanvasPoint v2, double t)
 {
-	float x = v2.x * t + v1.x * (1 - t);
-	float y = v2.y * t + v1.y * (1 - t);
-	float z = v2.depth * t + v1.depth * (1 - t);
+	double x = v2.x * t + v1.x * (1 - t);
+	double y = v2.y * t + v1.y * (1 - t);
+	double z = v2.depth * t + v1.depth * (1 - t);
 
 	CanvasPoint point = CanvasPoint(x, y, z);
 	point.texturePoint.x = v2.texturePoint.x * t + v1.texturePoint.x * (1 - t);
@@ -59,17 +59,17 @@ void drawLine(CanvasPoint from, CanvasPoint to, Colour colour, DrawingWindow &wi
 	{
 		return;
 	}
-	float difference = to.x - from.x;
+	double difference = to.x - from.x;
 	if (from.x < 0)
 	{
-		float t = -from.x / difference;
+		double t = -from.x / difference;
 		from = lerpCanvasPoint(from, to, t);
 		from.x = 0;
 	}
 
 	if (to.x >= window.width)
 	{
-		float t = 1 - (to.x - window.width + 1) / difference;
+		double t = 1 - (to.x - window.width + 1) / difference;
 		to = lerpCanvasPoint(from, to, t);
 		to.x = window.width - 1;
 	}
@@ -86,30 +86,28 @@ void drawLine(CanvasPoint from, CanvasPoint to, Colour colour, DrawingWindow &wi
 	difference = to.y - from.y;
 	if (from.y < 0)
 	{
-		float t = -from.y / difference;
+		double t = -from.y / difference;
 		from = lerpCanvasPoint(from, to, t);
 		from.y = 0;
 	}
 
 	if (to.y >= window.height)
 	{
-		float t = 1 - (to.y - window.height + 1) / difference;
+		double t = 1 - (to.y - window.height + 1) / difference;
 		to = lerpCanvasPoint(from, to, t);
 		to.y = window.height - 1;
 	}
 
-	CanvasPoint diff = CanvasPoint(to.x - from.x, to.y - from.y);
+	glm::vec2 diff = glm::vec2(to.x - from.x, to.y - from.y);
 	float numberOfSteps = fmax(fabs(diff.x), fabs(diff.y));
-	CanvasPoint stepSize = CanvasPoint(diff.x / numberOfSteps, diff.y / numberOfSteps);
 	for (int i = 0; i < numberOfSteps; i++)
 	{
-		float t = (float)i / (numberOfSteps - 1);
-		float depth = from.depth * (1 - t) + to.depth * t;
-		if (depth < 0)
+		double t = (double)i / (numberOfSteps - 1);
+		CanvasPoint p = lerpCanvasPoint(from, to, t);
+		if (p.depth < 0)
 		{
 			continue;
 		}
-		CanvasPoint p = CanvasPoint(from.x + stepSize.x * i, from.y + stepSize.y * i);
 		window.setPixelColour(p.x, p.y, colourToInt(colour));
 	}
 }
@@ -123,8 +121,8 @@ void strokeTriangle(CanvasTriangle triangle, Colour colour, DrawingWindow &windo
 
 CanvasPoint centerPoint(CanvasTriangle sortedTri) 
 {
-	float yDiff = sortedTri[2].y - sortedTri[0].y;
-	float t = (sortedTri[1].y - sortedTri[0].y) / yDiff;
+	double yDiff = sortedTri[2].y - sortedTri[0].y;
+	double t = (sortedTri[1].y - sortedTri[0].y) / yDiff;
 
 	return lerpCanvasPoint(sortedTri[0], sortedTri[2], t);
 }
@@ -279,7 +277,7 @@ void wireframeDraw(DrawingWindow &window, std::vector<Model*> &models)
 			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
 			CanvasTriangle triangle(p1,p2,p3);
 			strokeTriangle(triangle, tri.colour, window);
-			auto col = colourToInt(tri.colour);
+			// auto col = colourToInt(tri.colour);
 			// window.setPixelColour(v1.x, v1.y, col);
 			// window.setPixelColour(v2.x, v2.y, col);
 			// window.setPixelColour(v3.x, v3.y, col);
@@ -419,7 +417,7 @@ int main(int argc, char *argv[]) {
 	lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
 	// createSoftLight(lights, glm::vec3(-2.5f, 1.2f, 5.0f), glm::vec3(1400,1400,1400), 3, 2, 0.05f, 1);
 	auto cameraToWorld = matrixTRS(glm::vec3(0.3,-0.25f,.5f), glm::vec3(0,0,M_PI));
-	camera = Camera(0.05f, cameraToWorld, window.width, window.height, environment);
+	camera = Camera(5.0f, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
