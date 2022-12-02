@@ -8,7 +8,7 @@
 #include <iostream>
 
 const int MaxRayDepth = 3;
-const int MaxBounces = 8;
+const int MaxBounces = 10;
 const float ImageSize = 5000;
 const float Exposure = 0.25f;
 
@@ -30,11 +30,10 @@ Camera::Camera(float focalLength, glm::mat4 cameraToWorld, int width, int height
 glm::vec3 Camera::getCanvasIntersectionPoint(glm::vec4 vertexPosition)
 {
 	glm::vec4 cPos = vertexPosition * worldToCamera;
-	cPos.z = -cPos.z;
-	float u = ImageSize * focalLength * cPos.x / fabs(cPos.z) + width / 2.0f;
-	float v = height / 2.0f - ImageSize * focalLength * cPos.y / fabs(cPos.z);
+	float u = ImageSize * focalLength * cPos.x / (cPos.z) + width / 2.0f;
+	float v = ImageSize * focalLength * cPos.y / (cPos.z) + height / 2.0f;
 
-	return glm::vec3(u, v, cPos.z / focalLength);
+	return glm::vec3(u, v, -cPos.z);
 }
 
 glm::vec3 Camera::getRayDirection(float u, float v)
@@ -53,7 +52,7 @@ RayTriangleIntersection Camera::getClosestIntersection(glm::vec3 &origin, glm::v
 	for (int m = 0; m < models.size(); m++)
 	{
 		Model &model = *models[m];
-		if (!model.box.Hit(origin, rayDirection))
+		if (!model.boundingBox.Hit(origin, rayDirection))
 		{
 			continue;
 		}
@@ -222,7 +221,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		{
 			float f = fresnel(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
-			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo;
+			glm::vec3 reflectCol = renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * specCol;
 			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 			return surface + renderRay(intersection.intersectionPoint, refractDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * (1 - f) + reflectCol * f;
 		}
@@ -230,7 +229,7 @@ glm::vec3 Camera::renderRay(glm::vec3 &origin, glm::vec3 &rayDir, std::vector<Mo
 		{
 			float f = fresnel(rayDir, interpolated.normal, 1.35f);
 			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
-			return surface * (1 - f) + renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * albedo * f;
+			return surface * (1 - f) + renderRay(intersection.intersectionPoint, reflectDir, models, lights, currentDepth + 1, intersection.triangleIndex) * specCol * f;
 		}
 	}
 
@@ -339,9 +338,8 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 			if (material->refract || material->mirror)
 			{
 				float metallic = material->metallic;
-				glm::vec3 specCol = glm::normalize(albedo);
 				float f = fresnel(dir, interpolated.normal, material->refractiveIndex);
-				lightIntensity *= (metallic * specCol + glm::vec3(1,1,1) * (1 - metallic));
+				lightIntensity *= albedo;
 				if (material->mirror || ((float)(rand()) / RAND_MAX <= f))
 				{
 					dir = glm::reflect(dir, interpolated.normal);
@@ -435,8 +433,8 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 		{
 			glm::vec3 refractDir = refract(rayDir, interpolated.normal, material->refractiveIndex);
 			glm::vec3 reflectCol = renderRayBaked(intersection.intersectionPoint, reflectDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * specCol;
-			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights) * albedo;
-			return surface + renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) * specCol + reflectCol * f;
+			glm::vec3 surface = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
+			return surface + renderRayBaked(intersection.intersectionPoint, refractDir, models, lights, photonMap, currentDepth + 1, intersection.triangleIndex) * (1 - f) * albedo + reflectCol * f;
 		}
 		else if (material->mirror)
 		{
