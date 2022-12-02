@@ -40,54 +40,54 @@ str 0.2
 
 newmtl Glass0
 Kd 0.300000 1.000000 0.200000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass1
 Kd 0.200000 1.000000 0.300000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass2
 Kd 1.000000 0.300000 0.200000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass3
 Kd 0.200000 1.000000 1.000000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass4
 Kd 1.000000 0.400000 1.000000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass5
 Kd 1.000000 1.000000 0.200000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass6
 Kd 0.200000 0.300000 1.000000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass7
 Kd 0.200000 1.000000 0.200000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
 
 newmtl Glass8
 Kd 1.000000 0.200000 0.300000
-metallic 0.5
+metallic 0.9
 spec 512
 refract 1.51
