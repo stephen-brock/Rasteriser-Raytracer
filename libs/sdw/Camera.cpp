@@ -96,7 +96,7 @@ bool Camera::inShadow(RayTriangleIntersection &intersection, std::vector<Model *
 glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, float spec, glm::vec3 &specCol, glm::vec3 &normal, RayTriangleIntersection &intersection, glm::vec3 &rayDir, std::vector<Model *> &models, std::vector<Light> &lights)
 {
 	glm::vec3 lightIntensity = glm::vec3(0, 0, 0);
-	// glm::vec3 ambientIntensity = glm::vec3(0.1f,0.f,0.2f);
+	// glm::vec3 ambientIntensity = glm::vec3(0.5f,0.5f,0.8f);
 	for (int i = 0; i < lights.size(); i++)
 	{
 		glm::vec3 lightDir = lights[i].position - intersection.intersectionPoint;
@@ -108,7 +108,7 @@ glm::vec3 Camera::render(glm::vec3 &albedo, float metallic, float spec, glm::vec
 		}
 	}
 
-	// lightIntensity += ambientIntensity;
+	// lightIntensity += ambientIntensity * albedo;
 	return lightIntensity;
 }
 
@@ -297,7 +297,14 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 	std::vector<glm::vec3> *positions = new std::vector<glm::vec3>();
 	std::vector<Photon> *intensities = new std::vector<Photon>();
 	Photon photon;
-	glm::vec3 biasDirection = glm::normalize(biasPosition - lights[0].position) * biasAmount;
+	glm::vec3 averageLight = glm::vec3(0,0,0);
+	for (int i = 0; i < lights.size(); i++)
+	{
+		averageLight += lights[i].position;
+	}
+	averageLight /= lights.size();
+	
+	glm::vec3 biasDirection = glm::normalize(biasPosition - averageLight) * biasAmount;
 
 	for (int i = 0; i < iterations; i++)
 	{
@@ -337,7 +344,6 @@ KdTree *Camera::renderPhotonMap(std::vector<Model *> &models, std::vector<Light>
 			origin = intersection.intersectionPoint;
 			if (material->refract || material->mirror)
 			{
-				float metallic = material->metallic;
 				float f = fresnel(dir, interpolated.normal, material->refractiveIndex);
 				lightIntensity *= albedo;
 				if (material->mirror || ((float)(rand()) / RAND_MAX <= f))
@@ -469,20 +475,20 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	return direct + (colour * albedo) + specColour * specCol;
 }
 
-Colour Camera::renderTracedBaked(int x, int y, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap)
+glm::vec3 Camera::renderTracedBaked(float x, float y, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap)
 {
 	glm::vec3 rayDir = getRayDirection(x, y);
 	glm::vec3 colour = renderRayBaked(cameraPosition, rayDir, models, lights, photonMap);
 	tonemapping(colour);
-	return vectorToColour(colour);
+	return colour;
 }
 
-Colour Camera::renderTraced(int x, int y, std::vector<Model *> &models, std::vector<Light> &lights)
+glm::vec3 Camera::renderTraced(float x, float y, std::vector<Model *> &models, std::vector<Light> &lights)
 {
 	glm::vec3 rayDir = this->getRayDirection(x, y);
 	glm::vec3 colour = renderRay(cameraPosition, rayDir, models, lights);
 	tonemapping(colour);
-	return vectorToColour(colour);
+	return colour;
 }
 
 void Camera::updateTransform()

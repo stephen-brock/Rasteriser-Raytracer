@@ -19,6 +19,7 @@
 
 #define WIDTH 640
 #define HEIGHT 480
+#define SUPER_SAMPLE 1
 
 const bool GouraudShading = false;
 const glm::vec3 WindowPosition = glm::vec3(0,0.35f,1.2);
@@ -343,8 +344,20 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 	{
 		for (int j = 0; j < window.height; j++)
 		{
-			Colour col = camera.renderTracedBaked(i, j, models, lights, photon_map);
-			uint32_t intCol = colourToInt(col);
+			glm::vec3 sum = glm::vec3(0,0,0);
+			for (int x = 0; x < SUPER_SAMPLE; x++)
+			{
+				float subX = x - SUPER_SAMPLE / 2.0f;
+				
+				for (int y = 0; y < SUPER_SAMPLE; y++)
+				{
+					float subY = y - SUPER_SAMPLE / 2.0f;
+					
+					sum += camera.renderTraced(i + 0.5f + subX, j + 0.5f + subY, models, lights);
+				}
+			}
+			sum /= SUPER_SAMPLE * SUPER_SAMPLE;
+			uint32_t intCol = colourToInt(vectorToColour(sum));
 			window.setPixelColour(i, j, intCol);
 		}
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
@@ -414,7 +427,7 @@ int main(int argc, char *argv[]) {
 	loadObj(*models, "./src/scene.obj", *materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
-	//lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
+	// lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
 	createSoftLight(lights, glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000), 3, 2, 0.05f, 2);
 	auto cameraToWorld = matrixTRS(glm::vec3(0.3,-0.25f,.5f), glm::vec3(0,0,M_PI));
 	camera = Camera(5.0f, cameraToWorld, window.width, window.height, environment);
@@ -447,7 +460,10 @@ int main(int argc, char *argv[]) {
 		
 		frame++;
 
-		lights[0].position = WindowPosition + glm::vec3(cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f)));
+		// lights[0].position = WindowPosition + glm::vec3(cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f)));
+		lights.clear();
+		createSoftLight(lights, WindowPosition + glm::vec3(cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f))), glm::vec3(20000,20000,20000), 3, 2, 0.15f, 2);
+
 		if (renderMode == 0)
 		{
 			wireframeDraw(window, *models);

@@ -18,8 +18,8 @@ class Camera {
         glm::vec3 getCanvasIntersectionPoint(glm::vec4 vertexPosition);
         glm::vec3 getRayDirection(float x, float y);
         void updateTransform();
-        Colour renderTraced(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights);
-        Colour renderTracedBaked(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap);
+        glm::vec3 renderTraced(float x, float y, std::vector<Model*> &models, std::vector<Light> &lights);
+        glm::vec3 renderTracedBaked(float x, float y, std::vector<Model*> &models, std::vector<Light> &lights, KdTree* photonMap);
         Colour renderTracedGouraud(int x, int y, std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         void initialiseGouraud(std::vector<Model*> &models, std::vector<Light> &lights, std::vector<std::vector<glm::vec3> > &vertexColours);
         KdTree* renderPhotonMap(std::vector<Model*> &models, std::vector<Light> &lights, int iterations, float reflectMultiplier, const glm::vec3 &biasPosition, float biasAmount, float intensity);
