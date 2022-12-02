@@ -19,10 +19,10 @@ bool BoundingBox::Hit(glm::vec3 &origin, glm::vec3 &dir)
 
     if (tF > tT)
     {
+        // std::swap(tF, tT);
         float tmp = tF;
         tF = tT;
-        tF = tmp;
-        // std::swap(tF, tT);
+        tT = tmp;
     }
 
     float tFy = fromDir.y / dir.y;
@@ -30,10 +30,10 @@ bool BoundingBox::Hit(glm::vec3 &origin, glm::vec3 &dir)
 
     if (tFy > tTy)
     {
+        // std::swap(tFy, tTy);
         float tmp = tFy;
         tFy = tTy;
-        tFy = tmp;
-        // std::swap(tFy, tTy);
+        tTy = tmp;
     }
 
     if ((tF > tTy) || (tFy > tT)) 
@@ -49,10 +49,10 @@ bool BoundingBox::Hit(glm::vec3 &origin, glm::vec3 &dir)
 
     if (tFz > tTz)
     {
+        // std::swap(tFz, tTz);
         float tmp = tFz;
         tFz = tTz;
-        tFz = tmp;
-        // std::swap(tFz, tTz);
+        tTz = tmp;
     }
 
     if ((tF > tTz) || (tFz > tT)) 
