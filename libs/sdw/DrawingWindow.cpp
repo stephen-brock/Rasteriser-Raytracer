@@ -6,7 +6,7 @@ DrawingWindow::DrawingWindow() {}
 
 DrawingWindow::DrawingWindow(int w, int h, bool fullscreen) : width(w), height(h), pixelBuffer(w * h) {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) printMessageAndQuit("Could not initialise SDL: ", SDL_GetError());
-	uint32_t flags = SDL_WINDOW_OPENGL;
+	uint32_t flags = SDL_WINDOW_FOREIGN;
 	if (fullscreen) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	int ANYWHERE = SDL_WINDOWPOS_UNDEFINED;
 	window = SDL_CreateWindow("COMS30020", ANYWHERE, ANYWHERE, width, height, flags);
@@ -14,7 +14,7 @@ DrawingWindow::DrawingWindow(int w, int h, bool fullscreen) : width(w), height(h
 	// Set rendering to software (hardware acceleration doesn't work on all platforms)
 	flags = SDL_RENDERER_SOFTWARE;
 	// You could try hardware acceleration if you like - by uncommenting the below line
-	flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
+	//flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
 	renderer = SDL_CreateRenderer(window, -1, flags);
 	if (!renderer) printMessageAndQuit("Could not create renderer: ", SDL_GetError());
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");

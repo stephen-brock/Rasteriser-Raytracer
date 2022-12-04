@@ -457,8 +457,8 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 
 void cameraAnimation(glm::vec3 &cameraPosition, glm::vec3 &lookAt, int frame)
 {
-	lookAt = glm::vec3(cos(frame * 0.02) * 1.0f,-0.5f,-.5f);
-	cameraPosition = lookAt + glm::vec3(-cos(frame * 0.02) * 1.0f, 0.3f,1.4f);
+	lookAt = glm::vec3(0.f,-0.f,-.5f);
+	cameraPosition = glm::vec3(0.f, 0.f,1.1f);
 }
 
 int main(int argc, char *argv[]) {
@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool rendered = false;
-	int frame = 75;
+	int frame = 25;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
@@ -504,10 +504,10 @@ int main(int argc, char *argv[]) {
 		camera.cameraToWorld = matrixTRS(camPos, glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
 		
-		// frame++;
+		//frame++;
 
 		lights.clear();
-		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 2.0f + sin(frame * 0.008f) * 0.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
+		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 0.0f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
 
 		auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
 		models->at(0)->transform = mat;
