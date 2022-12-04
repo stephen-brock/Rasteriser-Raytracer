@@ -507,7 +507,7 @@ int main(int argc, char *argv[]) {
 		//frame++;
 
 		lights.clear();
-		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 0.0f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
+		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 1.0f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
 
 		auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
 		models->at(0)->transform = mat;
@@ -543,7 +543,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			rendered = true;
-			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
+			window.savePPM("./output/" + std::to_string(frame) + ".ppm");
 			frame++;
 		}
 
