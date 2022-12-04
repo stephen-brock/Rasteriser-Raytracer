@@ -1,6 +1,6 @@
 #include "BoundingBox.h"
 
-const float Padding = 0.0f;
+const float Padding = 0.000001f;
 
 BoundingBox::BoundingBox() = default;
 BoundingBox::BoundingBox(glm::vec3 from, glm::vec3 to)

@@ -341,7 +341,7 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 100000, 0.5f, WindowPosition, 7.0f, 0.1f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 30000, 0.5f, WindowPosition, 9.0f, 0.05f);
 	std::vector<glm::vec3> pixels = std::vector<glm::vec3>();
 	std::vector<bool> bloomThreshold = std::vector<bool>();
 
@@ -478,7 +478,7 @@ int main(int argc, char *argv[]) {
 	// lights.push_back(Light(glm::vec3(0.0f, 2.0f, 4.0f), glm::vec3(20000,20000,20000)));
 	// createSoftLight(lights, glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 2);
 	auto cameraToWorld = matrixTRS(glm::vec3(0.3,-0.25f,.5f), glm::vec3(0,0,M_PI));
-	camera = Camera(20.0f, cameraToWorld, window.width, window.height, environment);
+	camera = Camera(8.0f, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool rendered = false;
-	int frame = 0;
+	int frame = 75;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
@@ -507,7 +507,7 @@ int main(int argc, char *argv[]) {
 		// frame++;
 
 		lights.clear();
-		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * frame * 0.02) * 3.0f, 2.0f + sin(frame * 0.008f) * 0.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.15f, 2);
+		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 2.0f + sin(frame * 0.008f) * 0.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
 
 		auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
 		models->at(0)->transform = mat;
