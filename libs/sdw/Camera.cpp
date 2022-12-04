@@ -41,7 +41,7 @@ glm::vec3 Camera::getRayDirection(float u, float v)
 	float y = (v - (float)height / 2.0) / -(focalLength * ImageSize);
 	float x = (u - (float)width / 2.0) / (focalLength * ImageSize);
 	glm::vec4 localDir = glm::vec4(x, y, -1, 0);
-	glm::vec4 dir = localDir * cameraToWorld;
+	glm::vec4 dir = cameraToWorld * localDir;
 	return glm::normalize(glm::vec3(dir));
 }
 

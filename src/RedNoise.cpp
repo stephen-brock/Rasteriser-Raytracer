@@ -20,9 +20,12 @@
 #define WIDTH 640
 #define HEIGHT 480
 #define SUPER_SAMPLE 1
+#define KERNEL_WIDTH 64
 
 const bool GouraudShading = false;
-const glm::vec3 WindowPosition = glm::vec3(0,0.35f,1.2);
+const float BloomThreshold = 1.75f;
+const float BloomIntensity = 0.003f;
+const glm::vec3 WindowPosition = glm::vec3(0,0.1975f,1.0374f);
 
 Camera camera;
 int renderMode = 1;
@@ -334,11 +337,13 @@ void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model
 
 void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<Light> &lights, SDL_Event &event)
 {
-	window.clearPixels();
+	// window.clearPixels();
 
 	camera.updateTransform();
 
-	KdTree* photon_map = camera.renderPhotonMap(models, lights, 20000, 0.5f, WindowPosition, 7.0f, 0.1f);
+	KdTree* photon_map = camera.renderPhotonMap(models, lights, 100000, 0.5f, WindowPosition, 7.0f, 0.1f);
+	std::vector<glm::vec3> pixels = std::vector<glm::vec3>();
+	std::vector<bool> bloomThreshold = std::vector<bool>();
 
 	for (int i = 0; i < window.width; i++)
 	{
@@ -357,7 +362,44 @@ void traceDraw(DrawingWindow &window, std::vector<Model*> &models, std::vector<L
 				}
 			}
 			sum /= SUPER_SAMPLE * SUPER_SAMPLE;
+			pixels.push_back(sum);
+			bloomThreshold.push_back((sum.x + sum.y + sum.z) > BloomThreshold);
+
 			uint32_t intCol = colourToInt(vectorToColour(sum));
+			window.setPixelColour(i, j, intCol);
+		}
+		if (window.pollForInputEvents(event)) handleEvent(event, window);
+		window.renderFrame();
+	}
+
+	for (int i = 0; i < window.width; i++)
+	{
+		for (int j = 0; j < window.height; j++)
+		{
+			glm::vec2 center = glm::vec2(i, j);
+			glm::vec3 pixel = pixels[i * window.height + j];
+			glm::vec3 bloomSum = glm::vec3(0,0,0);
+			for (int x = 0; x < KERNEL_WIDTH; x++)
+			{
+				float subX = x - KERNEL_WIDTH / 2.0f;
+				int bloomX = floorf(i - subX);
+				bloomX = bloomX < 0 ? 0 : (bloomX >= window.width ? window.width - 1 : bloomX);
+				
+				for (int y = 0; y < KERNEL_WIDTH; y++)
+				{
+					float subY = y - KERNEL_WIDTH / 2.0f;
+					int bloomY = floorf(j - subY);
+					bloomY = bloomY < 0 ? 0 : (bloomY >= window.height ? window.height - 1 : bloomY);
+					int index = bloomX * window.height + bloomY;
+					if (bloomThreshold[index])
+					{
+						glm::vec2 dir = glm::vec2(bloomX - center.x, bloomY - center.y);
+						bloomSum += pixels[index] / fmaxf(1, glm::dot(dir, dir));
+					}
+				}
+			}
+
+			uint32_t intCol = colourToInt(vectorToColour(pixel + bloomSum * BloomIntensity));
 			window.setPixelColour(i, j, intCol);
 		}
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
@@ -415,8 +457,8 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 
 void cameraAnimation(glm::vec3 &cameraPosition, glm::vec3 &lookAt, int frame)
 {
-	lookAt = glm::vec3(cos(frame * 0.05f) * 1.0f,0.1f,-.5f);
-	cameraPosition = lookAt + glm::vec3(-cos(frame * 0.05f) * 1.0f, -0.1f,1.5f);
+	lookAt = glm::vec3(cos(frame * 0.015f) * 1.0f,-0.5f,-.5f);
+	cameraPosition = lookAt + glm::vec3(-cos(frame * 0.015) * 1.0f, 0.3f,1.4f);
 }
 
 int main(int argc, char *argv[]) {
@@ -433,10 +475,10 @@ int main(int argc, char *argv[]) {
 	loadObj(*models, "./src/scene.obj", *materials, 0.35f);
 
 	std::vector<Light> lights = std::vector<Light>();
-	// lights.push_back(Light(glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000)));
-	createSoftLight(lights, glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000), 3, 2, 0.05f, 2);
+	// lights.push_back(Light(glm::vec3(0.0f, 2.0f, 4.0f), glm::vec3(20000,20000,20000)));
+	// createSoftLight(lights, glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 2);
 	auto cameraToWorld = matrixTRS(glm::vec3(0.3,-0.25f,.5f), glm::vec3(0,0,M_PI));
-	camera = Camera(5.0f, cameraToWorld, window.width, window.height, environment);
+	camera = Camera(20.0f, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -447,10 +489,6 @@ int main(int argc, char *argv[]) {
 		{
 			depthBuffer[i][j] = 0;
 		}
-	}
-		for (int i = 0; i < models->size(); i++)
-	{
-		models->at(i)->TransformVerticies();
 	}
 
 	bool rendered = false;
@@ -469,7 +507,19 @@ int main(int argc, char *argv[]) {
 		frame++;
 
 		lights.clear();
-		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.05f) * 3.0f, 1.0f + sin(frame * 0.02f) * 0.5f, 5.0f + fabs(sin(frame * 0.0f))), glm::vec3(20000,20000,20000), 3, 2, 0.15f, 2);
+		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.015) * 3.0f, 1.5f + sin(frame * 0.004f) * 0.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.15f, 2);
+
+		auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
+		models->at(0)->transform = mat;
+		for (int i = 0; i < 8; i++)
+		{
+			models->at(6 + i)->transform = mat;
+		}
+		
+		for (int i = 0; i < models->size(); i++)
+		{
+			models->at(i)->TransformVerticies();
+		}
 
 		if (renderMode == 0)
 		{
