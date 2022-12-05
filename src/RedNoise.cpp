@@ -457,8 +457,8 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 
 void cameraAnimation(glm::vec3 &cameraPosition, glm::vec3 &lookAt, int frame)
 {
-	lookAt = glm::vec3(cos(frame * 0.02) * 1.0f,-0.5f,-.5f);
-	cameraPosition = lookAt + glm::vec3(-cos(frame * 0.02) * 1.0f, 0.3f,1.4f);
+	lookAt = glm::vec3(-1.0f,-0.4f,-.5f);
+	cameraPosition = glm::vec3(0.5f, 0.1f,0.f);
 }
 
 int main(int argc, char *argv[]) {
@@ -467,7 +467,7 @@ int main(int argc, char *argv[]) {
 
 	std::unordered_map<std::string, Material*> *materials = new std::unordered_map<std::string, Material*>();
 
-	Environment* environment = new Environment("./src/studio_small_03_1k.ppm", glm::vec3(.25f, .25f, .25f)); 
+	Environment* environment = new Environment("./src/studio_small_03_1k.ppm", glm::vec3(0.5, .5, .5)); 
 
 	loadMtl(*materials, "./src/scene.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
@@ -478,7 +478,7 @@ int main(int argc, char *argv[]) {
 	// lights.push_back(Light(glm::vec3(0.0f, 2.0f, 4.0f), glm::vec3(20000,20000,20000)));
 	// createSoftLight(lights, glm::vec3(0.0f, .5f, 4.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 2);
 	auto cameraToWorld = matrixTRS(glm::vec3(0.3,-0.25f,.5f), glm::vec3(0,0,M_PI));
-	camera = Camera(8.0f, cameraToWorld, window.width, window.height, environment);
+	camera = Camera(10.0f, cameraToWorld, window.width, window.height, environment);
 
 	float **depthBuffer;
 	depthBuffer = new float *[window.width];
@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool rendered = false;
-	int frame = 75;
+	int frame = 20;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
@@ -503,11 +503,9 @@ int main(int argc, char *argv[]) {
 		cameraAnimation(camPos, orbit, frame);
 		camera.cameraToWorld = matrixTRS(camPos, glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
-		
-		// frame++;
-
+		//frame++;
 		lights.clear();
-		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 2.0f + sin(frame * 0.008f) * 0.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
+		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 1.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
 
 		auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
 		models->at(0)->transform = mat;
@@ -543,7 +541,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			rendered = true;
-			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output/" + std::to_string(frame) + ".ppm");
+			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output2/" + std::to_string(frame) + ".ppm");
 			frame++;
 		}
 

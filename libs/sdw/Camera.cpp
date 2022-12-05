@@ -476,7 +476,7 @@ glm::vec3 Camera::renderRayBaked(glm::vec3 &origin, glm::vec3 &rayDir, std::vect
 	glm::vec3 direct = render(albedo, material->metallic, material->spec, specCol, interpolated.normal, intersection, rayDir, models, lights);
 	specColour += environment->sampleEnvironment(reflectDir) * f * material->metallic;
 
-	return direct + (colour * albedo) + specColour * specCol;
+	return direct + (colour * albedo * (1 - material->metallic)) + specColour * specCol;
 }
 
 glm::vec3 Camera::renderTracedBaked(float x, float y, std::vector<Model *> &models, std::vector<Light> &lights, KdTree *photonMap)
