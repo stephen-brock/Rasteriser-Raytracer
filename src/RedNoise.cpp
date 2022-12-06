@@ -322,10 +322,6 @@ void wireframeDraw(DrawingWindow &window, std::vector<Model*> &models)
 			auto p3 = CanvasPoint(v3.x, v3.y, v3.z);
 			CanvasTriangle triangle(p1,p2,p3);
 			strokeTriangle(triangle, tri.colour, window);
-			// auto col = colourToInt(tri.colour);
-			// window.setPixelColour(v1.x, v1.y, col);
-			// window.setPixelColour(v2.x, v2.y, col);
-			// window.setPixelColour(v3.x, v3.y, col);
 		}
 	}
 }
