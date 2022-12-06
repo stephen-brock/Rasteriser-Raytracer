@@ -29,6 +29,7 @@ const glm::vec3 WindowPosition = glm::vec3(0,0.1975f,1.0374f);
 
 Camera camera;
 int renderMode = 0;
+bool animation = false;
 
 uint32_t colourToInt(Colour colour) 
 {
@@ -242,6 +243,46 @@ void handleEvent(SDL_Event event, DrawingWindow &window) {
 		{
 			renderMode = 2;
 		}
+		
+		if (event.key.keysym.sym == SDLK_RETURN) 
+		{
+			animation = !animation;
+		}
+
+		if (event.key.keysym.sym == SDLK_w) 
+		{
+			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(0,0,0.1f));
+		}
+		else if (event.key.keysym.sym == SDLK_d) 
+		{
+			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(0.1f,0,0.f));
+		}
+		else if (event.key.keysym.sym == SDLK_a) 
+		{
+			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(-0.1f,0,0.f));
+		}
+		else if (event.key.keysym.sym == SDLK_s) 
+		{
+			camera.cameraToWorld = move(camera.cameraToWorld, glm::vec3(0,0,-0.1f));
+		}
+
+		if (event.key.keysym.sym == SDLK_RIGHT) 
+		{
+			camera.cameraToWorld = yRotation(camera.cameraToWorld, 0.4f);
+		}
+		else if (event.key.keysym.sym == SDLK_LEFT) 
+		{
+			camera.cameraToWorld = yRotation(camera.cameraToWorld, -0.4f);
+		}
+		else if (event.key.keysym.sym == SDLK_UP) 
+		{
+			camera.cameraToWorld = xRotation(camera.cameraToWorld, 0.4f);
+		}
+		else if (event.key.keysym.sym == SDLK_DOWN) 
+		{
+			camera.cameraToWorld = xRotation(camera.cameraToWorld, -0.4f);
+		}
+
 	} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 		window.savePPM("output.ppm");
 		window.saveBMP("output.bmp");
@@ -292,7 +333,6 @@ void wireframeDraw(DrawingWindow &window, std::vector<Model*> &models)
 void rasteriseDraw(DrawingWindow &window, float **depthBuffer, std::vector<Model*> &models)
 {
 	clearDepthBuffer(depthBuffer, window);
-	window.clearPixels();
 
 	camera.updateTransform();
 
@@ -500,10 +540,13 @@ int main(int argc, char *argv[]) {
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
 		glm::vec3 orbit = glm::vec3(0,0,0);
 		glm::vec3 camPos = glm::vec3(0,0,0);
-		cameraAnimation(camPos, orbit, frame);
-		camera.cameraToWorld = matrixTRS(camPos, glm::vec3(0,0,M_PI));
-		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
-		frame++;
+		if (animation)
+		{
+			frame++;
+			cameraAnimation(camPos, orbit, frame);
+			camera.cameraToWorld = matrixTRS(camPos, glm::vec3(0,0,M_PI));
+			camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
+		}
 		lights.clear();
 		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 1.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
 
