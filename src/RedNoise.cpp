@@ -29,7 +29,7 @@ const glm::vec3 WindowPosition = glm::vec3(0,0.1975f,1.0374f);
 
 Camera camera;
 int renderMode = 0;
-bool animation = false;
+bool animation = true;
 
 uint32_t colourToInt(Colour colour) 
 {
