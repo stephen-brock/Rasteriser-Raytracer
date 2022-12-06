@@ -497,7 +497,6 @@ int main(int argc, char *argv[]) {
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
 		if (window.pollForInputEvents(event)) handleEvent(event, window);
-		// glm::vec3 orbit = glm::vec3(0,-.5f,-1.0f);
 		glm::vec3 orbit = glm::vec3(0,0,0);
 		glm::vec3 camPos = glm::vec3(0,0,0);
 		cameraAnimation(camPos, orbit, frame);
