@@ -1,19 +1,23 @@
 newmtl White
 Kd 1.000000 1.000000 1.000000
 metallic 0.0
+spec 32
 
 newmtl Grey
 Kd 0.700000 0.700000 0.700000
 metallic 0.0
+spec 32
 
 newmtl Red
 Kd 0.700000 0.700000 0.700000
-metallic 0.1
+metallic 0.8
+spec 256
 refract 1.45
 
 newmtl Green
 Kd 1.000000 1.000000 1.000000
 metallic 0.0
+spec 64
 tex ./src/texture.ppm
 nrm ./src/texture_nrm.ppm
 str 0.25
@@ -21,16 +25,20 @@ str 0.25
 newmtl Blue
 Kd 0.100000 0.100000 0.800000
 metallic 1.0
+spec 256
 
 newmtl Yellow
 Kd 1.000000 1.000000 0.000000
 metallic 0.0
+spec 32
 
 newmtl Magenta
 Kd 1.000000 0.000000 1.000000
 metallic 0.0
+spec 32
 
 newmtl Cyan
 Kd 0.000000 1.000000 1.000000
 metallic 0.0
+spec 32
 

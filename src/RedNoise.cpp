@@ -19,7 +19,7 @@
 
 #define WIDTH 640
 #define HEIGHT 480
-#define SUPER_SAMPLE 1
+#define SUPER_SAMPLE 2
 #define KERNEL_WIDTH 64
 
 const bool GouraudShading = false;
@@ -28,7 +28,7 @@ const float BloomIntensity = 0.003f;
 const glm::vec3 WindowPosition = glm::vec3(0,0.1975f,1.0374f);
 
 Camera camera;
-int renderMode = 1;
+int renderMode = 0;
 
 uint32_t colourToInt(Colour colour) 
 {
@@ -457,8 +457,8 @@ void createSoftLight(std::vector<Light> &lights, glm::vec3 centerPos, glm::vec3 
 
 void cameraAnimation(glm::vec3 &cameraPosition, glm::vec3 &lookAt, int frame)
 {
-	lookAt = glm::vec3(-1.0f,-0.4f,-.5f);
-	cameraPosition = glm::vec3(0.5f, 0.1f,0.f);
+	lookAt = glm::vec3(0.0f,0.0f,0.0f);
+	cameraPosition = glm::vec3(cos(frame * 0.04f) * 4, 0.0f,sin(frame * 0.04f) * 4);
 }
 
 int main(int argc, char *argv[]) {
@@ -469,6 +469,7 @@ int main(int argc, char *argv[]) {
 
 	Environment* environment = new Environment("./src/studio_small_03_1k.ppm", glm::vec3(0.5, .5, .5)); 
 
+	// loadMtl(*materials, "./src/cornell-box.mtl");
 	loadMtl(*materials, "./src/scene.mtl");
 	std::vector<Model*> *models = new std::vector<Model*>();
 	// loadObjOld(*models, "./src/cornell-box.obj", *materials, 0.35f);
@@ -492,7 +493,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	bool rendered = false;
-	int frame = 20;
+	int frame = 0;
 	
 	while (true) {
 		// We MUST poll for events - otherwise the window will freeze !
@@ -502,16 +503,16 @@ int main(int argc, char *argv[]) {
 		cameraAnimation(camPos, orbit, frame);
 		camera.cameraToWorld = matrixTRS(camPos, glm::vec3(0,0,M_PI));
 		camera.cameraToWorld = lookAt(camera.cameraToWorld, orbit);
-		//frame++;
+		frame++;
 		lights.clear();
 		createSoftLight(lights, WindowPosition + glm::vec3(-cos(frame * 0.02) * 3.0f, 1.5f, 5.0f), glm::vec3(20000,20000,20000), 3, 3, 0.05f, 1);
 
-		auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
-		models->at(0)->transform = mat;
-		for (int i = 0; i < 8; i++)
-		{
-			models->at(6 + i)->transform = mat;
-		}
+		// auto mat = matrixTRS(glm::vec3(0,0,0), glm::vec3(0, frame * 0.03f, 0));
+		// models->at(0)->transform = mat;
+		// for (int i = 0; i < 8; i++)
+		// {
+		// 	models->at(6 + i)->transform = mat;
+		// }
 		
 		for (int i = 0; i < models->size(); i++)
 		{
@@ -522,11 +523,13 @@ int main(int argc, char *argv[]) {
 		{
 			wireframeDraw(window, *models);
 			rendered = false;
+			// window.savePPM("./output5/" + std::to_string(frame) + ".ppm");
 		}
 		else if (renderMode == 1)
 		{
 			rasteriseDraw(window, depthBuffer, *models);
 			rendered = false;
+			// window.savePPM("./output5/" + std::to_string(frame) + ".ppm");
 		}
 		else if (renderMode == 2)
 		{
@@ -540,7 +543,7 @@ int main(int argc, char *argv[]) {
 			}
 
 			rendered = true;
-			window.savePPM("/Users/smb/Desktop/Graphics-Coursework/output2/" + std::to_string(frame) + ".ppm");
+			window.savePPM("./output/" + std::to_string(frame) + ".ppm");
 			frame++;
 		}
 
